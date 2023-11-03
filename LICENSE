@@ -197,3 +197,10 @@ It is copyright by the Free Software Foundation but is freely distributable.
 The same holds for its supporting scripts (config.guess, config.sub,
 ltmain.sh).  Another support script, install-sh, is copyright by X Consortium
 but is also freely distributable.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+CWSDPMI.EXE license:
+CWSDPMI (http://sandmann.dotster.com/cwsdpmi/) DPMI host is licensed under GPL.
+The documentation states:
+> The files in this binary distribution may be redistributed under the GPL
+(with source) or without the source code provided.

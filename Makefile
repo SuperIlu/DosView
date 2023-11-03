@@ -100,7 +100,7 @@ $(BUILDDIR)/loadpng/%.o: $(LOADPNG)/%.c Makefile
 
 zip: all
 	rm -f $(RELZIP)
-	zip -9 -r $(RELZIP) $(EXE) LICENSE *.md
+	zip -9 -r $(RELZIP) $(EXE) CWSDPMI.EXE LICENSE *.md
 
 init:
 	mkdir -p $(BUILDDIR) $(BUILDDIR)/loadpng
