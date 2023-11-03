@@ -50,3 +50,21 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# other
+DBS
+LALA.TXT
+3rdparty/allegro-4.2.2-xc-master/obj/djgpp/asmcapa.h
+3rdparty/allegro-4.2.2-xc-master/obj/djgpp/asmdef.inc
+3rdparty/allegro-4.2.2-xc-master/obj/djgpp/asmdef.s
+LOW.JPG
+LOW.WEB
+LOW.WEBP
+OUT.BMP
+OUT.JPG
+OUT.PCX
+OUT.QOI
+OUT.TGA
+OUT.WEB
+OUT.WEBP
+dosview-X.Y.zip

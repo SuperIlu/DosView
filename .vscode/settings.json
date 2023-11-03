@@ -1,0 +1,17 @@
+{
+	"editor.formatOnSave": true,
+	"editor.insertSpaces": false,
+	"C_Cpp.clang_format_style": "{ BasedOnStyle: Google, ColumnLimit: 180, IndentWidth: 4, SortIncludes: false }",
+	"javascript.suggest.autoImports": false,
+	"cmake.configureOnOpen": false,
+	"files.associations": {
+		"array": "c",
+		"vector": "c",
+		"xstring": "c",
+		"xutility": "c",
+		"xiosbase": "c",
+		"thread": "c",
+		"xlocale": "c",
+		"cdjpeg.h": "c"
+	}
+}
