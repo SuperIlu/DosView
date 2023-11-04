@@ -33,10 +33,9 @@ static gfx_mode_t all_modes[] = {{.width = 320, .height = 240},   // 320x240
 
 static void usage() {
     fputs("Usage:\n", stderr);
-    fputs("  DOSVIEW.EXE [-hbl] [-q <quality>] [-w <width>] [-s <outfile>] <infile>\n", stderr);
+    fputs("  DOSVIEW.EXE [-hl] [-q <quality>] [-w <width>] [-s <outfile>] <infile>\n", stderr);
     fputs("  -h           : show this screen\n", stderr);
     fputs("  -l           : list know screen modes\n", stderr);
-    fputs("  -b           : try 32bpp screen mode instead of 24bpp\n", stderr);
     fputs("  -w <width>   : screen width to use.\n", stderr);
     fputs("  -s <outfile> : do not show the image, save it to outfile instead.\n", stderr);
     fputs("  -q <quality> : Quality for writing JPEG and WEPB image (1..100).\n", stderr);
@@ -121,14 +120,13 @@ int main(int argc, char *argv[]) {
     char *outfile = NULL;
     int screen_width = 640;
     int screen_height = 0;
-    bool bit32 = false;
     int x_start = 0;
     int y_start = 0;
     int scaled_height;
     int scaled_width;
     float factor = 1.0f;  // 1.0 is 'fit on screen'
 
-    while ((opt = getopt(argc, argv, "lbhw:s:q:")) != -1) {
+    while ((opt = getopt(argc, argv, "lhw:s:q:")) != -1) {
         switch (opt) {
             case 'w':
                 screen_width = atoi(optarg);
@@ -138,9 +136,6 @@ int main(int argc, char *argv[]) {
                 break;
             case 's':
                 outfile = optarg;
-                break;
-            case 'b':
-                bit32 = true;
                 break;
             case 'l':
                 list_modes();
@@ -182,16 +177,16 @@ int main(int argc, char *argv[]) {
     install_keyboard();
     register_formats();
 
-    if (bit32) {
-        set_color_depth(32);
-    } else {
+    set_color_depth(32);
+    if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
         set_color_depth(24);
+        if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
+            set_last_error("Resolution %dx%d not available: %s\n", screen_width, screen_height, allegro_error);
+            clean_exit(EXIT_SUCCESS);
+        }
     }
 
-    if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-        set_last_error("Couldn't set a %d bit color resolution at %dx%d: %s\n", bit32 ? 32 : 24, screen_width, screen_height, allegro_error);
-        clean_exit(EXIT_SUCCESS);
-    }
+    DEBUGF("%dbpp\n", get_color_depth());
 
     BITMAP *bm = load_bitmap(fname, NULL);
     if (!bm) {
