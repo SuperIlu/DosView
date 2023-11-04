@@ -53,6 +53,7 @@ dkms.conf
 
 # other
 DBS
+DBX
 LALA.TXT
 3rdparty/allegro-4.2.2-xc-master/obj/djgpp/asmcapa.h
 3rdparty/allegro-4.2.2-xc-master/obj/djgpp/asmdef.inc
@@ -69,3 +70,6 @@ OUT.TIF
 OUT.WEB
 OUT.WEBP
 dosview-X.Y.zip
+
+3rdparty/openjpeg-2.5.0/build
+3rdparty/jasper-version-4.0.0/djgpp

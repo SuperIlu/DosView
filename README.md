@@ -10,6 +10,8 @@ Please note: Although `DosView` should work from a i386 upwards, this programm c
 
 **Binary downloads are available on the [Releases](https://github.com/SuperIlu/DosView/releases) page.**
 
+The source is on [GitHub](https://github.com/SuperIlu/DosView/)
+
 # Usage
 
 ## Supported formats

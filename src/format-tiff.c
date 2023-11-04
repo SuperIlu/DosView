@@ -123,9 +123,8 @@ int save_tiff(AL_CONST char *fname, BITMAP *bm, AL_CONST RGB *pal) {
 
     // We will use most basic image data storing method provided by the library to write the data into the file, this method uses strips, and we are storing a line (row) of pixel
     // at a time.  This following code writes the data from the char array image into the file:
-    size_t linebytes = NUM_CHANNELS * bm->w;  // length in memory of one row of pixel in the image.
-
-    DEBUGF("linebytes=%ld, scanlinesize=%ld\n", linebytes, TIFFScanlineSize(out));
+    // size_t linebytes = NUM_CHANNELS * bm->w;  // length in memory of one row of pixel in the image.
+    // DEBUGF("linebytes=%ld, scanlinesize=%ld\n", linebytes, TIFFScanlineSize(out));
 
     unsigned char *buf = (unsigned char *)_TIFFmalloc(TIFFScanlineSize(out));  // buffer used to store the row of pixel information for writing to file
 

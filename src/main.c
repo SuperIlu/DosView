@@ -8,6 +8,7 @@
 #include "format-webp.h"
 #include "format-jpeg.h"
 #include "format-tiff.h"
+#include "format-jp2.h"
 
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
@@ -100,6 +101,7 @@ static void register_formats() {
     register_bitmap_file_type("web", load_webp, save_webp, NULL);
     register_bitmap_file_type("jpg", load_jpeg, save_jpeg, NULL);
     register_bitmap_file_type("tif", load_tiff, save_tiff, NULL);
+    register_bitmap_file_type("jp2", load_jp2, NULL, NULL);
 }
 
 static void clean_exit(int code) {

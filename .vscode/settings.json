@@ -14,6 +14,14 @@
 		"xlocale": "c",
 		"cdjpeg.h": "c",
 		"memory": "c",
-		"xmemory0": "c"
+		"xmemory0": "c",
+		"chrono": "c",
+		"functional": "c",
+		"ratio": "c",
+		"tuple": "c",
+		"type_traits": "c",
+		"utility": "c",
+		"xtr1common": "c",
+		"jasper.h": "c"
 	}
 }
