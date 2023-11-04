@@ -7,12 +7,13 @@
 #include "format-qoi.h"
 #include "format-webp.h"
 #include "format-jpeg.h"
+#include "format-tiff.h"
 
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-#define FORMATS_READ "BMP, PCX, TGA, LBM, QOI, JPG, PNG, WEB"
-#define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB"
+#define FORMATS_READ "BMP, PCX, TGA, LBM, QOI, JPG, PNG, WEB, TIF"
+#define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF"
 
 int output_quality = 95;
 
@@ -43,7 +44,7 @@ static void usage() {
     fputs("Input formats  : " FORMATS_READ " \n", stderr);
     fputs("Output formats : " FORMATS_WRITE " \n", stderr);
     fputs("\n", stderr);
-    fputs("This is DosView 1.0\n", stderr);
+    fputs("This is DosView 1.1\n", stderr);
     fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", stderr);
     fputs("See LICENSE for detailed licensing information.\n", stderr);
     fputs("\n", stderr);
@@ -99,6 +100,7 @@ static void register_formats() {
     register_bitmap_file_type("qoi", load_qoi, save_qoi, NULL);
     register_bitmap_file_type("web", load_webp, save_webp, NULL);
     register_bitmap_file_type("jpg", load_jpeg, save_jpeg, NULL);
+    register_bitmap_file_type("tif", load_tiff, save_tiff, NULL);
 }
 
 static void clean_exit(int code) {
@@ -235,19 +237,19 @@ int main(int argc, char *argv[]) {
             DEBUGF("key=%04X\n", key);
 
             // modifiers
-            int stepsize = 1;
+            int stepsize = 2;
             float scale_step = 0.1f;
             if (key_shifts & KB_SHIFT_FLAG) {
-                stepsize *= 4;
-                scale_step *= 0.2f;
+                stepsize *= 2;
+                scale_step *= 2.0f;
             }
             if (key_shifts & KB_CTRL_FLAG) {
-                stepsize *= 8;
-                scale_step *= 0.4f;
+                stepsize *= 4;
+                scale_step *= 4.0f;
             }
             if (key_shifts & KB_ALT_FLAG) {
-                stepsize *= 16;
-                scale_step *= 0.8f;
+                stepsize *= 8;
+                scale_step *= 8.0f;
             }
 
             // keys
@@ -274,9 +276,9 @@ int main(int argc, char *argv[]) {
             } else if (key_upper == KEY_PGUP) {
                 factor -= scale_step;
             } else if ((key_lower == 'F') || (key_lower == 'f')) {
-                factor = (float)bm->w / (float)screen_width;  // full zoom
+                factor = (float)bm->w / (float)screen_width;  // fit on screen
             } else if ((key_lower == 'Z') || (key_lower == 'z')) {
-                factor = 1.0f;  // fit on screen
+                factor = 1.0f;  // full zoom
             } else if ((key_lower == 'Q') || (key_lower == 'q')) {
                 break;  // exit
             }
@@ -292,8 +294,8 @@ int main(int argc, char *argv[]) {
             if (scaled_height >= bm->h) {
                 factor = (float)bm->h / (float)screen_height;
             }
-            if (factor < 0.0f) {
-                factor = 0.0f;
+            if (factor < 1.0f) {
+                factor = 1.0f;
             }
 
             scaled_width = screen_width * factor;
@@ -312,7 +314,7 @@ int main(int argc, char *argv[]) {
                 y_start = 0;
             }
 
-            DEBUGF("start = %dx%d, stepsize = %d, factor=%f, scaled=%dx%d\n", x_start, y_start, stepsize, factor, scaled_width, scaled_height);
+            DEBUGF("start = %dx%d, stepsize = %d, factor=%f, scale_step=%f, scaled=%dx%d\n", x_start, y_start, stepsize, factor, scale_step, scaled_width, scaled_height);
         }
         destroy_bitmap(tmp);
     } else {

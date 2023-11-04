@@ -12,6 +12,8 @@
 		"xiosbase": "c",
 		"thread": "c",
 		"xlocale": "c",
-		"cdjpeg.h": "c"
+		"cdjpeg.h": "c",
+		"memory": "c",
+		"xmemory0": "c"
 	}
 }

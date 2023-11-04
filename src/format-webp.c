@@ -47,7 +47,7 @@ BITMAP *load_webp(AL_CONST char *filename, RGB *pal) {
         return NULL;
     }
 
-    DEBUGF("loaded %p, size %d\n", buffer, size);
+    DEBUGF("loaded %p, size %ld\n", buffer, size);
 
     int width, height;
     uint8_t *rgba = WebPDecodeRGBA(buffer, size, &width, &height);

@@ -10,12 +10,14 @@ ZLIB		= $(THIRDPARTY)/zlib-1.2.12
 ALPNG		= $(THIRDPARTY)/alpng13
 WEBP		= $(THIRDPARTY)/libwebp-1.3.2
 JPEG		= $(THIRDPARTY)/jpeg-9e
+TIFF		= $(THIRDPARTY)/tiff-4.6.0
 
 LIB_ALLEGRO	= $(ALLEGRO)/lib/djgpp/liballeg.a
 LIB_Z		= $(ZLIB)/msdos/libz.a
 LIB_ALPNG	= $(ALPNG)/libalpng.a
 LIB_WEBP 	= $(WEBP)/src/libwebp.a
 LIB_JPEG 	= $(JPEG)/libjpeg.a
+LIB_TIFF 	= $(TIFF)/libtiff/.libs/libtiff.a
 
 # compiler
 CDEF     = #-DDEBUG_ENABLED
@@ -26,16 +28,18 @@ INCLUDES = \
 	-I$(realpath $(ZLIB)) \
 	-I$(realpath $(ALPNG))/src \
 	-I$(realpath $(JPEG)) \
+	-I$(realpath $(TIFF))/libtiff \
 	-I$(realpath $(WEBP))/src
 
 # linker
-LIBS     = -ljpeg -lwebp -lsharpyuv -lalpng -lz -lalleg -lm -lemu 
+LIBS     = -ljpeg -lwebp -lsharpyuv -lalpng -ltiff -lz -lalleg -lm -lemu 
 LDFLAGS  = -s \
 	-L$(DOJSPATH)/$(ALLEGRO)/lib/djgpp \
 	-L$(DOJSPATH)/$(ALPNG) \
 	-L$(DOJSPATH)/$(WEBP)/src \
 	-L$(DOJSPATH)/$(WEBP)/sharpyuv \
 	-L$(DOJSPATH)/$(JPEG) \
+	-L$(DOJSPATH)/$(TIFF)/libtiff/.libs \
 	-L$(DOJSPATH)/$(ZLIB)
 
 # output
@@ -62,6 +66,7 @@ PARTS= \
 	$(BUILDDIR)/format-qoi.o \
 	$(BUILDDIR)/format-webp.o \
 	$(BUILDDIR)/format-jpeg.o \
+	$(BUILDDIR)/format-tiff.o \
 	$(BUILDDIR)/util.o \
 	$(BUILDDIR)/main.o
 
@@ -89,7 +94,11 @@ libjpeg: $(LIB_JPEG)
 $(LIB_JPEG):
 	$(MAKE) $(MPARA) -C $(JPEG) -f makefile.dj libjpeg.a
 
-$(EXE): init liballegro libz alpng libwebp libjpeg $(PARTS) 
+libtiff: $(LIB_TIFF)
+$(LIB_TIFF):
+	$(MAKE) $(MPARA) -C $(TIFF)
+
+$(EXE): init liballegro libz alpng libwebp libjpeg libtiff $(PARTS) 
 	$(CC) $(LDFLAGS) -o $@ $(PARTS) $(LIBS)
 
 $(BUILDDIR)/%.o: src/%.c Makefile
@@ -102,14 +111,14 @@ zip: all
 	rm -f $(RELZIP)
 	zip -9 -r $(RELZIP) $(EXE) CWSDPMI.EXE LICENSE *.md
 
-init:
+init: configure_tiff
 	mkdir -p $(BUILDDIR) $(BUILDDIR)/loadpng
 
 clean:
 	rm -rf $(BUILDDIR)/
 	rm -f $(EXE) $(ZIP)
 
-distclean: clean zclean alclean webpclean jpegclean
+distclean: clean zclean alclean webpclean jpegclean distclean_tiff
 	rm -f OUT.* LOW.*
 
 zclean:
@@ -124,10 +133,20 @@ alclean:
 webpclean:
 	$(MAKE) -C $(WEBP) -f makefile.djgpp clean
 
+tiffclean:
+	$(MAKE) -C $(TIFF) clean
+
 fixnewlines:
 	find . -iname "*.sh" -exec dos2unix -v \{\} \;
 
-.PHONY: clean distclean init
+configure_tiff: $(TIFF)/Makefile
+$(TIFF)/Makefile:
+	(cd $(TIFF) && HOST=$(CROSS) CFLAGS="$(CFLAGS)" LDFLAGS="" LIBS="" ./djgpp-config.sh)
+
+distclean_tiff:
+	-(cd $(TIFF) && make distclean)
+
+.PHONY: clean distclean init distclean_tiff
 
 DEPS := $(wildcard $(BUILDDIR)/*.d)
 ifneq ($(DEPS),)
