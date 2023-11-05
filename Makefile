@@ -22,7 +22,7 @@ LIB_TIFF 	= $(TIFF)/libtiff/.libs/libtiff.a
 LIB_JASPER 	= $(JASPER)/djgpp/src/libjasper/libjasper.a
 
 # compiler
-CDEF     = -DDEBUG_ENABLED
+CDEF     = #-DDEBUG_ENABLED
 CFLAGS   = -MMD -Wall -std=gnu99 -Os -march=i386 -mtune=i586 -ffast-math -fomit-frame-pointer $(INCLUDES) -fgnu89-inline -Wmissing-prototypes $(CDEF)
 INCLUDES = \
 	-I$(realpath ./src) \

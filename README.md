@@ -46,8 +46,8 @@ Usage:
   -l           : list know screen modes
   -w <width>   : screen width to use.
   -s <outfile> : do not show the image, save it to outfile instead.
-  -q <quality> : Quality for writing JPEG and WEPB image (1..100). Default: 95
-```
+  -q <quality> : Quality for writing JPG/WEP/JP2 image (1..100). Default: 95
+  ```
 
 ## Keys
 - `ESC`/`Q`: quit
@@ -73,7 +73,7 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * error handling is a mess
 * code is badly documentes
 * can be very slow on old machines
-* eats HUGE amounts of memory
+* eats HUGE amounts of memory (we are talking >128MiB to encode a 2672x2004 JPEG2000)
 * if loading/saving fails you get no info why (if you are not running a debug build that is)
 * image conversion always needs a working display mode (Allegros fault)
 
