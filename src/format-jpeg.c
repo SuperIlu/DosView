@@ -138,6 +138,7 @@ BITMAP *load_jpeg(AL_CONST char *filename, RGB *pal) {
     DEBUGF("JPEG has %dx%dx%d\n", cinfo.output_width, cinfo.output_height, cinfo.num_components);
 
     if ((cinfo.num_components != 1) && (cinfo.num_components != 3)) {
+        DEBUGF("Wrong number of components: %d", cinfo.num_components);
         jpeg_destroy_decompress(&cinfo);
         fclose(infile);
         return NULL;

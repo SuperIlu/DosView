@@ -13,8 +13,8 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-#define FORMATS_READ "BMP, PCX, TGA, LBM, QOI, JPG, PNG, WEB, TIF"
-#define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF"
+#define FORMATS_READ "BMP, PCX, TGA, LBM, QOI, JPG, PNG, WEB, TIF, JP2"
+#define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF, JP2"
 
 int output_quality = 95;
 
@@ -49,7 +49,7 @@ static void usage() {
     fputs("  -l           : list know screen modes\n", stderr);
     fputs("  -w <width>   : screen width to use.\n", stderr);
     fputs("  -s <outfile> : do not show the image, save it to outfile instead.\n", stderr);
-    fputs("  -q <quality> : Quality for writing JPEG and WEPB image (1..100).\n", stderr);
+    fputs("  -q <quality> : Quality for writing JPG/WEP/JP2 image (1..100). Default: 95\n", stderr);
     fputs("\n", stderr);
     fputs("Input formats  : " FORMATS_READ " \n", stderr);
     fputs("Output formats : " FORMATS_WRITE " \n", stderr);
@@ -157,7 +157,7 @@ static void register_formats() {
     register_bitmap_file_type("web", load_webp, save_webp, NULL);
     register_bitmap_file_type("jpg", load_jpeg, save_jpeg, NULL);
     register_bitmap_file_type("tif", load_tiff, save_tiff, NULL);
-    register_bitmap_file_type("jp2", load_jp2, NULL, NULL);
+    register_bitmap_file_type("jp2", load_jp2, save_jp2, NULL);
 }
 
 static void clean_exit(int code) {
@@ -237,22 +237,18 @@ int main(int argc, char *argv[]) {
     init_last_error();
     register_formats();
     allegro_init();
-    if (!outfile) {
-        install_keyboard();
+    install_keyboard();
 
-        set_color_depth(32);
+    set_color_depth(32);
+    if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
+        set_color_depth(24);
         if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-            set_color_depth(24);
-            if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-                set_last_error("Resolution %dx%d not available: %s\n", screen_width, screen_height, allegro_error);
-                clean_exit(EXIT_SUCCESS);
-            }
+            set_last_error("Resolution %dx%d not available: %s\n", screen_width, screen_height, allegro_error);
+            clean_exit(EXIT_SUCCESS);
         }
-
-        DEBUGF("%dx%d at %dbpp\n", screen_width, screen_height, get_color_depth());
-    } else {
-        DEBUGF("image conversion only\n");
     }
+
+    DEBUGF("%dx%d at %dbpp\n", screen_width, screen_height, get_color_depth());
 
     BITMAP *bm = load_bitmap(infile, NULL);
     if (!bm) {
