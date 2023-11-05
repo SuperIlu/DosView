@@ -51,9 +51,13 @@ Usage:
 - `ESC`/`Q`: quit
 - `F`: show actual size
 - `Z`: fit to screen
-- `PAGE UP`: increase zoom
-- `PAGE DOWN`: decrease zoom
-- `UP`/`DOWN`/`LEFT`/`RIGHT`: move image
+- `I`: toggle image info
+- `PAGE UP`/`9`: increase zoom
+- `PAGE DOWN`/`3`: decrease zoom
+- `UP`/`8`: move image up
+- `DOWN`/`2`: move image down
+- `LEFT`/`4`: move image left
+- `RIGHT`/`6`: move image right
 - `SHIFT`: move/scale 2x as fast
 - `CTRL`: move/scale 4x as fast
 - `ALT`: move/scale 8x as fast
@@ -68,6 +72,10 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * added TIFF
 * fixed zoom and documentation
 * added 24/32bpp autodetection
+* added image info
+* added num pad keys
+* added check to list modes
+* image conversion no longer needs a working display mode
 
 ### 1.0 / November 3rd, 2023
 * first public release

@@ -145,6 +145,7 @@ BITMAP *load_jpeg(AL_CONST char *filename, RGB *pal) {
 
     BITMAP *bm = create_bitmap_ex(32, cinfo.output_width, cinfo.output_height);
     if (!bm) {
+        DEBUGF("Can't create bitmap: %s", allegro_error);
         jpeg_destroy_decompress(&cinfo);
         fclose(infile);
         return NULL;
@@ -174,7 +175,7 @@ BITMAP *load_jpeg(AL_CONST char *filename, RGB *pal) {
          */
         int numread = jpeg_read_scanlines(&cinfo, buffer, 1);
         (void)numread;
-        DEBUGF("num read = %d, current = %d\n", numread, cinfo.output_scanline);
+        // DEBUGF("num read = %d, current = %d\n", numread, cinfo.output_scanline);
         /* Assume put_scanline_someplace wants a pointer and sample count. */
         // put_scanline_someplace(buffer[0], row_stride);
 

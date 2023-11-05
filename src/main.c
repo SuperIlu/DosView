@@ -21,21 +21,31 @@ int output_quality = 95;
 typedef struct {
     int width;
     int height;
+    int available;
 } gfx_mode_t;
 
 static char *lastError;
 
-static gfx_mode_t all_modes[] = {{.width = 320, .height = 240},   // 320x240
-                                 {.width = 640, .height = 480},   // 640x480
-                                 {.width = 800, .height = 600},   // 800x600
-                                 {.width = 1024, .height = 768},  // 1024x768
-                                 {.width = 1280, .height = 960},  // 1280x960
+static gfx_mode_t all_modes[] = {{.width = 320, .height = 240, .available = 0},   // 320x240
+                                 {.width = 640, .height = 480, .available = 0},   // 640x480
+                                 {.width = 800, .height = 600, .available = 0},   // 800x600
+                                 {.width = 1024, .height = 768, .available = 0},  // 1024x768
+                                 {.width = 1280, .height = 960, .available = 0},  // 1280x960
                                  {.width = 0, .height = 0}};
 
+static void banner(FILE *out) {
+    fputs("This is DosView 1.1 (https://github.com/SuperIlu/DosView)\n", out);
+    fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
+    fputs("See LICENSE for detailed licensing information.\n", out);
+    fputs("\n", out);
+}
+
 static void usage() {
+    banner(stderr);
     fputs("Usage:\n", stderr);
-    fputs("  DOSVIEW.EXE [-hl] [-q <quality>] [-w <width>] [-s <outfile>] <infile>\n", stderr);
+    fputs("  DOSVIEW.EXE [-hkl] [-q <quality>] [-w <width>] [-s <outfile>] <infile>\n", stderr);
     fputs("  -h           : show this screen\n", stderr);
+    fputs("  -k           : keys help\n", stderr);
     fputs("  -l           : list know screen modes\n", stderr);
     fputs("  -w <width>   : screen width to use.\n", stderr);
     fputs("  -s <outfile> : do not show the image, save it to outfile instead.\n", stderr);
@@ -44,9 +54,27 @@ static void usage() {
     fputs("Input formats  : " FORMATS_READ " \n", stderr);
     fputs("Output formats : " FORMATS_WRITE " \n", stderr);
     fputs("\n", stderr);
-    fputs("This is DosView 1.1\n", stderr);
-    fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", stderr);
-    fputs("See LICENSE for detailed licensing information.\n", stderr);
+    exit(EXIT_FAILURE);
+}
+
+static void keys() {
+    banner(stderr);
+    fputs("Keys:\n", stderr);
+    fputs("  - `ESC`/`Q`       : quit\n", stderr);
+    fputs("  - `F`             : show actual size\n", stderr);
+    fputs("  - `Z`             : fit to screen\n", stderr);
+    fputs("  - `I`             : toggle image info\n", stderr);
+    fputs("  - `PAGE UP`/`9`   : increase zoom\n", stderr);
+    fputs("  - `PAGE DOWN`/`3` : decrease zoom\n", stderr);
+    fputs("  - `UP`/`8`        : move image up\n", stderr);
+    fputs("  - `DOWN`/`2`      : move image down\n", stderr);
+    fputs("  - `LEFT`/`4`      : move image left\n", stderr);
+    fputs("  - `RIGHT`/`6`     : move image right\n", stderr);
+    fputs("  - `SHIFT`         : move/scale 2x as fast\n", stderr);
+    fputs("  - `CTRL`          : move/scale 4x as fast\n", stderr);
+    fputs("  - `ALT`           : move/scale 8x as fast\n", stderr);
+    fputs("\n", stderr);
+    fputs("  `SHIFT`, `ALT` and `CTRL` can be used in any combination.\n", stderr);
     fputs("\n", stderr);
     exit(EXIT_FAILURE);
 }
@@ -85,11 +113,39 @@ static void set_last_error(const char *err, ...) {
 }
 
 static void list_modes() {
-    gfx_mode_t *m = &all_modes[0];
+    gfx_mode_t *m;
 
-    fprintf(stderr, "Known modes:\n");
+    // check available modes
+    init_last_error();
+    allegro_init();
+    m = &all_modes[0];
     while (m->width) {
-        fprintf(stderr, "  %dx%d\n", m->width, m->height);
+        set_color_depth(32);
+        if (set_gfx_mode(GFX_AUTODETECT, m->width, m->height, 0, 0) != 0) {
+            set_color_depth(24);
+            if (set_gfx_mode(GFX_AUTODETECT, m->width, m->height, 0, 0) != 0) {
+                m->available = 0;
+            } else {
+                m->available = get_color_depth();
+            }
+        } else {
+            m->available = get_color_depth();
+        }
+        m++;
+    }
+    allegro_exit();
+    textmode(C80);
+
+    // print available modes
+    banner(stdout);
+    fprintf(stdout, "Display modes:\n");
+    m = &all_modes[0];
+    while (m->width) {
+        if (m->available) {
+            fprintf(stdout, "  %4dx%4d := %dbpp\n", m->width, m->height, m->available);
+        } else {
+            fprintf(stdout, "  %4dx%4d := UNAVAILABLE\n", m->width, m->height);
+        }
         m++;
     }
     exit(EXIT_FAILURE);
@@ -106,7 +162,7 @@ static void register_formats() {
 
 static void clean_exit(int code) {
     allegro_exit();
-    textmode(C80);
+    // textmode(C80);
     if (lastError) {
         fputs(lastError, stdout);
         fputs("\nERROR\n", stdout);
@@ -118,7 +174,7 @@ static void clean_exit(int code) {
 
 int main(int argc, char *argv[]) {
     int opt = 0;
-    char *fname = NULL;
+    char *infile = NULL;
     char *outfile = NULL;
     int screen_width = 640;
     int screen_height = 0;
@@ -127,8 +183,9 @@ int main(int argc, char *argv[]) {
     int scaled_height;
     int scaled_width;
     float factor = 1.0f;  // 1.0 is 'fit on screen'
+    bool image_info = false;
 
-    while ((opt = getopt(argc, argv, "lhw:s:q:")) != -1) {
+    while ((opt = getopt(argc, argv, "klhw:s:q:")) != -1) {
         switch (opt) {
             case 'w':
                 screen_width = atoi(optarg);
@@ -142,6 +199,9 @@ int main(int argc, char *argv[]) {
             case 'l':
                 list_modes();
                 break;
+            case 'k':
+                keys();
+                break;
             case 'h':
             default: /* '?' */
                 usage();
@@ -150,7 +210,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (optind < argc) {
-        fname = argv[optind];
+        infile = argv[optind];
     } else {
         usage();
     }
@@ -175,43 +235,47 @@ int main(int argc, char *argv[]) {
     }
 
     init_last_error();
-    allegro_init();
-    install_keyboard();
     register_formats();
+    allegro_init();
+    if (!outfile) {
+        install_keyboard();
 
-    set_color_depth(32);
-    if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-        set_color_depth(24);
+        set_color_depth(32);
         if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-            set_last_error("Resolution %dx%d not available: %s\n", screen_width, screen_height, allegro_error);
-            clean_exit(EXIT_SUCCESS);
+            set_color_depth(24);
+            if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
+                set_last_error("Resolution %dx%d not available: %s\n", screen_width, screen_height, allegro_error);
+                clean_exit(EXIT_SUCCESS);
+            }
         }
+
+        DEBUGF("%dx%d at %dbpp\n", screen_width, screen_height, get_color_depth());
+    } else {
+        DEBUGF("image conversion only\n");
     }
 
-    DEBUGF("%dbpp\n", get_color_depth());
-
-    BITMAP *bm = load_bitmap(fname, NULL);
+    BITMAP *bm = load_bitmap(infile, NULL);
     if (!bm) {
-        set_last_error("Can't load image %s", fname);
+        set_last_error("Can't load image %s", infile);
         clean_exit(EXIT_SUCCESS);
     }
 
     DEBUGF("image size = %dx%d\n", bm->w, bm->h);
 
-    // scale to "fit screen"
-    factor = (float)bm->w / (float)screen_width;
-    scaled_width = screen_width * factor;
-    scaled_height = screen_height * factor;
-    if (scaled_width >= bm->w) {
-        factor = (float)bm->w / (float)screen_width;
-    }
-    if (scaled_height >= bm->h) {
-        factor = (float)bm->h / (float)screen_height;
-    }
-    scaled_width = screen_width * factor;
-    scaled_height = screen_height * factor;
-
     if (!outfile) {
+        // scale to "fit screen"
+        factor = (float)bm->w / (float)screen_width;
+        scaled_width = screen_width * factor;
+        scaled_height = screen_height * factor;
+        if (scaled_width >= bm->w) {
+            factor = (float)bm->w / (float)screen_width;
+        }
+        if (scaled_height >= bm->h) {
+            factor = (float)bm->h / (float)screen_height;
+        }
+        scaled_width = screen_width * factor;
+        scaled_height = screen_height * factor;
+
         BITMAP *tmp = create_bitmap_ex(get_color_depth(), bm->w, bm->h);
         while (true) {
             //////
@@ -221,6 +285,38 @@ int main(int argc, char *argv[]) {
             DEBUGF("stretch_blit(%d, %d, %d, %d, %d, %d, %d, %d)\n", x_start, y_start, scaled_width, scaled_height, 0, 0, screen_width, screen_height);
             blit(bm, tmp, 0, 0, 0, 0, bm->w, bm->h);
             stretch_blit(tmp, screen, x_start, y_start, scaled_width, scaled_height, 0, 0, screen_width, screen_height);
+
+            //////
+            /// draw image
+            if (image_info) {
+                int ySpacing = font->height + 1;
+                int xPos = 20;
+                int yPos = 10;
+                int width = 25 * 8;
+                int height = ySpacing * 8;
+                if (strlen(infile) > 9) {
+                    width += (strlen(infile) - 9) * 8;
+                }
+
+                rectfill(screen, xPos, yPos, xPos + width, yPos + height, makecol(32, 32, 32));
+                rect(screen, xPos, yPos, xPos + width, yPos + height, makecol(227, 198, 34));
+
+                xPos += 8;
+                yPos += 8;
+                int txt_col = makecol(161, 21, 158);
+                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Filename    : %s", infile);
+                yPos += ySpacing;
+                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Image size  : %04dx%04d", bm->w, bm->h);
+                yPos += ySpacing;
+                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Screen size : %04dx%04d", screen_width, screen_height);
+                yPos += ySpacing;
+                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Scaled size : %04dx%04d", scaled_width, scaled_height);
+                yPos += ySpacing;
+                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Image pos   : %04dx%04d", x_start, y_start);
+                yPos += ySpacing;
+                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Factor      : %.5f", factor);
+                yPos += ySpacing;
+            }
 
             //////
             /// handle input
@@ -250,34 +346,34 @@ int main(int argc, char *argv[]) {
             }
 
             // keys
-            if (key_upper == KEY_ESC) {
+            if ((key_upper == KEY_ESC) || (key_lower == 'Q') || (key_lower == 'q')) {
                 break;  // exit
-            } else if (key_upper == KEY_LEFT) {
+            } else if ((key_upper == KEY_LEFT) || (key_lower == '4')) {
                 if (x_start > 0) {
                     x_start -= stepsize;
                 }
-            } else if (key_upper == KEY_RIGHT) {
+            } else if ((key_upper == KEY_RIGHT) || (key_lower == '6')) {
                 if (x_start + screen_width < bm->w) {
                     x_start += stepsize;
                 }
-            } else if (key_upper == KEY_UP) {
+            } else if ((key_upper == KEY_UP) || (key_lower == '8')) {
                 if (y_start > 0) {
                     y_start -= stepsize;
                 }
-            } else if (key_upper == KEY_DOWN) {
+            } else if ((key_upper == KEY_DOWN) || (key_lower == '2')) {
                 if (y_start + screen_height < bm->h) {
                     y_start += stepsize;
                 }
-            } else if (key_upper == KEY_PGDN) {
+            } else if ((key_upper == KEY_PGDN) || (key_lower == '3')) {
                 factor += scale_step;
-            } else if (key_upper == KEY_PGUP) {
+            } else if ((key_upper == KEY_PGUP) || (key_lower == '9')) {
                 factor -= scale_step;
             } else if ((key_lower == 'F') || (key_lower == 'f')) {
                 factor = (float)bm->w / (float)screen_width;  // fit on screen
             } else if ((key_lower == 'Z') || (key_lower == 'z')) {
                 factor = 1.0f;  // full zoom
-            } else if ((key_lower == 'Q') || (key_lower == 'q')) {
-                break;  // exit
+            } else if ((key_lower == 'i') || (key_lower == 'i')) {
+                image_info = !image_info;
             }
 
             //////
@@ -315,10 +411,15 @@ int main(int argc, char *argv[]) {
         }
         destroy_bitmap(tmp);
     } else {
+        banner(stdout);
+        fprintf(stdout, "Loaded %s\n", infile);
+        fprintf(stdout, "Image is  %4dx%4d\n", bm->w, bm->h);
         if (save_bitmap(outfile, bm, NULL)) {
+            destroy_bitmap(bm);
             set_last_error("Can't save image %s", outfile);
             clean_exit(EXIT_SUCCESS);
         }
+        fprintf(stdout, "Wrote %s\n", outfile);
     }
     destroy_bitmap(bm);
 
