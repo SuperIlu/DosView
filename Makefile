@@ -11,7 +11,6 @@ ALPNG		= $(THIRDPARTY)/alpng13
 WEBP		= $(THIRDPARTY)/libwebp-1.3.2
 JPEG		= $(THIRDPARTY)/jpeg-9e
 TIFF		= $(THIRDPARTY)/tiff-4.6.0
-JP2			= $(THIRDPARTY)/openjpeg-2.5.0
 JASPER		= $(THIRDPARTY)/jasper-version-4.0.0
 
 LIB_ALLEGRO	= $(ALLEGRO)/lib/djgpp/liballeg.a
@@ -20,11 +19,10 @@ LIB_ALPNG	= $(ALPNG)/libalpng.a
 LIB_WEBP 	= $(WEBP)/src/libwebp.a
 LIB_JPEG 	= $(JPEG)/libjpeg.a
 LIB_TIFF 	= $(TIFF)/libtiff/.libs/libtiff.a
-LIB_JP2 	= $(JP2)/build/bin/libopenjp2.a
 LIB_JASPER 	= $(JASPER)/djgpp/src/libjasper/libjasper.a
 
 # compiler
-CDEF     = -DUSE_JASPER #-DDEBUG_ENABLED
+CDEF     = -DDEBUG_ENABLED
 CFLAGS   = -MMD -Wall -std=gnu99 -Os -march=i386 -mtune=i586 -ffast-math -fomit-frame-pointer $(INCLUDES) -fgnu89-inline -Wmissing-prototypes $(CDEF)
 INCLUDES = \
 	-I$(realpath ./src) \
@@ -33,14 +31,12 @@ INCLUDES = \
 	-I$(realpath $(ALPNG))/src \
 	-I$(realpath $(JPEG)) \
 	-I$(realpath $(TIFF))/libtiff \
-	-I$(realpath $(JP2))/src/lib/openjp2 \
-	-I$(realpath $(JP2))/build/src/lib/openjp2 \
 	-I$(realpath $(JASPER))/src/libjasper/include \
 	-I$(realpath $(JASPER))/djgpp/src/libjasper/include/ \
 	-I$(realpath $(WEBP))/src
 
 # linker
-LIBS     = -ljpeg -lwebp -lsharpyuv -lalpng -ltiff -lopenjp2 -ljasper -lz -lalleg -lm -lemu 
+LIBS     = -ljpeg -lwebp -lsharpyuv -lalpng -ltiff -ljasper -lz -lalleg -lm -lemu 
 LDFLAGS  = -s \
 	-L$(DOJSPATH)/$(ALLEGRO)/lib/djgpp \
 	-L$(DOJSPATH)/$(ALPNG) \
@@ -48,7 +44,6 @@ LDFLAGS  = -s \
 	-L$(DOJSPATH)/$(WEBP)/sharpyuv \
 	-L$(DOJSPATH)/$(JPEG) \
 	-L$(DOJSPATH)/$(TIFF)/libtiff/.libs \
-	-L$(DOJSPATH)/$(JP2)/build/bin/ \
 	-L$(DOJSPATH)/$(JASPER)/djgpp/src/libjasper/ \
 	-L$(DOJSPATH)/$(ZLIB)
 
@@ -73,7 +68,6 @@ export
 MPARA=-j8
 
 PARTS= \
-	$(BUILDDIR)/format-jasper.o \
 	$(BUILDDIR)/format-jp2.o \
 	$(BUILDDIR)/format-qoi.o \
 	$(BUILDDIR)/format-webp.o \
@@ -110,15 +104,11 @@ libtiff: $(LIB_TIFF)
 $(LIB_TIFF):
 	$(MAKE) $(MPARA) -C $(TIFF)
 
-libjp2: $(LIB_JP2)
-$(LIB_JP2):
-	(cd $(JP2) && bash ./cmake-djgpp.sh)
-
 libjasper: $(LIB_JASPER)
 $(LIB_JASPER):
 	(cd $(JASPER) && bash ./cmake-djgpp.sh)
 
-$(EXE): init liballegro libz alpng libwebp libjpeg libtiff libjp2 libjasper $(PARTS) 
+$(EXE): init liballegro libz alpng libwebp libjpeg libtiff libjasper $(PARTS) 
 	$(CC) $(LDFLAGS) -o $@ $(PARTS) $(LIBS)
 
 $(BUILDDIR)/%.o: src/%.c Makefile
@@ -138,7 +128,7 @@ clean:
 	rm -rf $(BUILDDIR)/
 	rm -f $(EXE) $(ZIP)
 
-distclean: clean zclean alclean webpclean jpegclean distclean_tiff jp2clean jasperclean
+distclean: clean zclean alclean webpclean jpegclean distclean_tiff jasperclean
 	rm -f OUT.* LOW.*
 
 zclean:
@@ -155,9 +145,6 @@ webpclean:
 
 tiffclean:
 	$(MAKE) -C $(TIFF) clean
-
-jp2clean:
-	rm -rf $(JP2)/build
 
 jasperclean:
 	rm -rf $(JASPER)/djgpp
