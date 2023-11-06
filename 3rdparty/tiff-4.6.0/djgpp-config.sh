@@ -1,4 +1,4 @@
-./configure \
+bash ./configure \
 	--build=`gcc -dumpmachine` \
 	--host=${CROSS} \
 	--disable-shared \

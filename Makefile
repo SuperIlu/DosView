@@ -154,7 +154,7 @@ fixnewlines:
 
 configure_tiff: $(TIFF)/Makefile
 $(TIFF)/Makefile:
-	(cd $(TIFF) && HOST=$(CROSS) CFLAGS="$(CFLAGS)" LDFLAGS="" LIBS="" ./djgpp-config.sh)
+	(cd $(TIFF) && HOST=$(CROSS) CFLAGS="$(CFLAGS)" LDFLAGS="" LIBS="" bash ./djgpp-config.sh)
 
 distclean_tiff:
 	-(cd $(TIFF) && make distclean)
