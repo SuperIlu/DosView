@@ -26,6 +26,8 @@ The source is on [GitHub](https://github.com/SuperIlu/DosView/)
 - WEBP (using the `.WEB` file extension)
 - TIFF (using the `.TIF` file extension): only first image
 - JPEG 2000 (using the `.JP2` file extension)
+- PBM PPM
+- RAS
 
 ### Writing
 - BMP
@@ -37,6 +39,8 @@ The source is on [GitHub](https://github.com/SuperIlu/DosView/)
 - WEBP (using the `.WEB` file extension): always lossy, quality can be controlled with `-q`.
 - TIFF (using the `.TIF` file extension), LZW compression only
 - JPEG 2000 (using the `.JP2` file extension)
+- PBM
+- RAS
 
 ## Command line arguments
 ```
@@ -46,6 +50,7 @@ Usage:
   -l           : list know screen modes
   -w <width>   : screen width to use.
   -s <outfile> : do not show the image, save it to outfile instead.
+  -f <factor>  : scale saved image, <1 reduce, >1 enlarge (float).
   -q <quality> : Quality for writing JPG/WEP/JP2 image (1..100). Default: 95
   ```
 
@@ -78,7 +83,12 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * image conversion always needs a working display mode (Allegros fault)
 
 # Changelog
-### 1.1 / November 4rd, 2023
+### 1.2 / November 8th, 2023
+* added NetPBM formats
+* added Sun RAS format
+* added imiage scaling
+
+### 1.1 / November 4th, 2023
 * added TIFF
 * added JPEG 2000
 * fixed zoom and documentation

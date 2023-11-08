@@ -1,6 +1,6 @@
 bash ./configure \
 	--build=`gcc -dumpmachine` \
-	--host=${CROSS} \
+	--host=${HOST} \
 	--disable-shared \
 	--disable-tests \
 	--disable-tools \

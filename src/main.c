@@ -34,7 +34,7 @@ static gfx_mode_t all_modes[] = {{.width = 320, .height = 240, .available = 0}, 
                                  {.width = 0, .height = 0}};
 
 static void banner(FILE *out) {
-    fputs("This is DosView 1.1 (https://github.com/SuperIlu/DosView)\n", out);
+    fputs("This is DosView 1.2 (https://github.com/SuperIlu/DosView)\n", out);
     fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
     fputs("See LICENSE for detailed licensing information.\n", out);
     fputs("\n", out);
@@ -49,6 +49,7 @@ static void usage() {
     fputs("  -l           : list know screen modes\n", stderr);
     fputs("  -w <width>   : screen width to use.\n", stderr);
     fputs("  -s <outfile> : do not show the image, save it to outfile instead.\n", stderr);
+    fputs("  -f <factor>  : scale saved image, <1 reduce, >1 enlarge (float).\n", stderr);
     fputs("  -q <quality> : Quality for writing JPG/WEP/JP2 image (1..100). Default: 95\n", stderr);
     fputs("\n", stderr);
     fputs("Input formats  : " FORMATS_READ " \n", stderr);
@@ -158,6 +159,13 @@ static void register_formats() {
     register_bitmap_file_type("jpg", load_jpeg, save_jpeg, NULL);
     register_bitmap_file_type("tif", load_tiff, save_tiff, NULL);
     register_bitmap_file_type("jp2", load_jp2, save_jp2, NULL);
+    register_bitmap_file_type("ras", load_jp2, save_jp2, NULL);
+
+    // add all netpbm formats
+    register_bitmap_file_type("pnm", load_jp2, save_jp2, NULL);
+    register_bitmap_file_type("pbm", load_jp2, save_jp2, NULL);
+    register_bitmap_file_type("pgm", load_jp2, save_jp2, NULL);
+    register_bitmap_file_type("ppm", load_jp2, save_jp2, NULL);
 }
 
 static void clean_exit(int code) {
@@ -184,14 +192,18 @@ int main(int argc, char *argv[]) {
     int scaled_width;
     float factor = 1.0f;  // 1.0 is 'fit on screen'
     bool image_info = false;
+    float scale = 1.0f;
 
-    while ((opt = getopt(argc, argv, "klhw:s:q:")) != -1) {
+    while ((opt = getopt(argc, argv, "klhw:s:q:f:")) != -1) {
         switch (opt) {
             case 'w':
                 screen_width = atoi(optarg);
                 break;
             case 'q':
                 output_quality = atoi(optarg);
+                break;
+            case 'f':
+                scale = atof(optarg);
                 break;
             case 's':
                 outfile = optarg;
@@ -410,14 +422,39 @@ int main(int argc, char *argv[]) {
         banner(stdout);
         fprintf(stdout, "Loaded %s\n", infile);
         fprintf(stdout, "Image is  %4dx%4d\n", bm->w, bm->h);
-        if (save_bitmap(outfile, bm, NULL)) {
+        if (scale == 1.0f) {
+            if (save_bitmap(outfile, bm, NULL)) {
+                destroy_bitmap(bm);
+                set_last_error("Can't save image %s", outfile);
+                clean_exit(EXIT_SUCCESS);
+            }
             destroy_bitmap(bm);
-            set_last_error("Can't save image %s", outfile);
-            clean_exit(EXIT_SUCCESS);
+        } else {
+            scaled_width = screen_width * scale;
+            scaled_height = screen_height * scale;
+
+            if (!scaled_height || !scaled_width) {
+                fprintf(stdout, "Refusing to scale down to 0 pixel.");
+                clean_exit(EXIT_FAILURE);
+            }
+
+            fprintf(stdout, "Scaling to %4dx%4d\n", scaled_width, scaled_height);
+            BITMAP *scaled = create_bitmap_ex(32, scaled_width, scaled_height);
+            if (!scaled) {
+                fprintf(stdout, "Out of memory, image to large.");
+                clean_exit(EXIT_FAILURE);
+            }
+            stretch_blit(bm, scaled, 0, 0, bm->w, bm->h, 0, 0, scaled_width, scaled_height);
+            destroy_bitmap(bm);
+            if (save_bitmap(outfile, scaled, NULL)) {
+                destroy_bitmap(scaled);
+                set_last_error("Can't save image %s", outfile);
+                clean_exit(EXIT_SUCCESS);
+            }
+            destroy_bitmap(scaled);
         }
         fprintf(stdout, "Wrote %s\n", outfile);
     }
-    destroy_bitmap(bm);
 
     clean_exit(EXIT_SUCCESS);
 }
