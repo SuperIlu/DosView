@@ -12,6 +12,8 @@ WEBP		= $(THIRDPARTY)/libwebp-1.3.2
 JPEG		= $(THIRDPARTY)/jpeg-9e
 TIFF		= $(THIRDPARTY)/tiff-4.6.0
 JASPER		= $(THIRDPARTY)/jasper-version-4.0.0
+ALGIF		= $(THIRDPARTY)/algif_1.3
+STB			= $(THIRDPARTY)/stb
 
 LIB_ALLEGRO	= $(ALLEGRO)/lib/djgpp/liballeg.a
 LIB_Z		= $(ZLIB)/msdos/libz.a
@@ -20,6 +22,7 @@ LIB_WEBP 	= $(WEBP)/src/libwebp.a
 LIB_JPEG 	= $(JPEG)/libjpeg.a
 LIB_TIFF 	= $(TIFF)/libtiff/.libs/libtiff.a
 LIB_JASPER 	= $(JASPER)/djgpp/src/libjasper/libjasper.a
+LIB_ALGIF 	= $(ALGIF)/libalgif.a
 
 # compiler
 CDEF     = #-DDEBUG_ENABLED
@@ -29,17 +32,20 @@ INCLUDES = \
 	-I$(realpath $(ALLEGRO))/include \
 	-I$(realpath $(ZLIB)) \
 	-I$(realpath $(ALPNG))/src \
+	-I$(realpath $(ALGIF))/src \
 	-I$(realpath $(JPEG)) \
+	-I$(realpath $(STB)) \
 	-I$(realpath $(TIFF))/libtiff \
 	-I$(realpath $(JASPER))/src/libjasper/include \
 	-I$(realpath $(JASPER))/djgpp/src/libjasper/include/ \
 	-I$(realpath $(WEBP))/src
 
 # linker
-LIBS     = -ljpeg -lwebp -lsharpyuv -lalpng -ltiff -ljasper -lz -lalleg -lm -lemu 
+LIBS     = -ljpeg -lwebp -lsharpyuv -lalpng -lalgif -ltiff -ljasper -lz -lalleg -lm -lemu 
 LDFLAGS  = -s \
 	-L$(DOJSPATH)/$(ALLEGRO)/lib/djgpp \
 	-L$(DOJSPATH)/$(ALPNG) \
+	-L$(DOJSPATH)/$(ALGIF) \
 	-L$(DOJSPATH)/$(WEBP)/src \
 	-L$(DOJSPATH)/$(WEBP)/sharpyuv \
 	-L$(DOJSPATH)/$(JPEG) \
@@ -68,7 +74,8 @@ export
 MPARA=-j8
 
 PARTS= \
-	$(BUILDDIR)/format-jp2.o \
+	$(BUILDDIR)/format-stb.o \
+	$(BUILDDIR)/format-jasper.o \
 	$(BUILDDIR)/format-qoi.o \
 	$(BUILDDIR)/format-webp.o \
 	$(BUILDDIR)/format-jpeg.o \
@@ -88,9 +95,13 @@ libz: $(LIB_Z)
 $(LIB_Z):
 	$(MAKE) $(MPARA) -C $(ZLIB) -f Makefile.dojs
 
-alpng: $(LIB_ALPNG)
+alpng: libz $(LIB_ALPNG)
 $(LIB_ALPNG):
 	$(MAKE) -C $(ALPNG) -f Makefile.zlib
+
+algif: $(LIB_ALGIF)
+$(LIB_ALGIF):
+	$(MAKE) -C $(ALGIF) -f Makefile.dj
 
 libwebp: $(LIB_WEBP)
 $(LIB_WEBP):
@@ -108,7 +119,7 @@ libjasper: $(LIB_JASPER)
 $(LIB_JASPER):
 	(cd $(JASPER) && bash ./cmake-djgpp.sh)
 
-$(EXE): init liballegro libz alpng libwebp libjpeg libtiff libjasper $(PARTS) 
+$(EXE): init liballegro libz alpng algif libwebp libjpeg libtiff libjasper $(PARTS) 
 	$(CC) $(LDFLAGS) -o $@ $(PARTS) $(LIBS)
 
 $(BUILDDIR)/%.o: src/%.c Makefile
@@ -128,7 +139,7 @@ clean:
 	rm -rf $(BUILDDIR)/
 	rm -f $(EXE) $(ZIP)
 
-distclean: clean zclean alclean webpclean jpegclean distclean_tiff jasperclean
+distclean: clean zclean alclean webpclean jpegclean distclean_tiff jasperclean alpngclean algifclean
 	rm -f OUT.* LOW.*
 
 zclean:
@@ -145,6 +156,12 @@ webpclean:
 
 tiffclean:
 	$(MAKE) -C $(TIFF) clean
+
+alpngclean:
+	$(MAKE) -C $(ALPNG) -f Makefile.zlib clean
+
+algifclean:
+	$(MAKE) -C $(ALGIF) -f Makefile.dj clean
 
 jasperclean:
 	rm -rf $(JASPER)/djgpp

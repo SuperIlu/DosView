@@ -1,6 +1,6 @@
 #include "main.h"
 #include "jasper/jasper.h"
-#include "format-jp2.h"
+#include "format-jasper.h"
 
 #ifdef DEBUG_ENABLED
 static int jp2_vlogmsgf_stdout(jas_logtype_t type, const char *fmt, va_list ap) {
@@ -10,7 +10,7 @@ static int jp2_vlogmsgf_stdout(jas_logtype_t type, const char *fmt, va_list ap) 
 }
 #endif
 
-BITMAP *load_jp2(AL_CONST char *filename, RGB *pal) {
+BITMAP *load_jasper(AL_CONST char *filename, RGB *pal) {
     // init jasper
     jas_conf_clear();
     static jas_std_allocator_t allocator;
@@ -132,7 +132,7 @@ BITMAP *load_jp2(AL_CONST char *filename, RGB *pal) {
     return bm;
 }
 
-int save_jp2(AL_CONST char *filename, BITMAP *bm, AL_CONST RGB *pal) {
+int save_jasper(AL_CONST char *filename, BITMAP *bm, AL_CONST RGB *pal) {
     char outopts[100];
     snprintf(outopts, sizeof(outopts), "rate=%f", (float)output_quality / 100.0f);
 
@@ -149,6 +149,8 @@ int save_jp2(AL_CONST char *filename, BITMAP *bm, AL_CONST RGB *pal) {
 #ifdef DEBUG_ENABLED
     jas_conf_set_debug_level(99);
     jas_conf_set_vlogmsgf(jp2_vlogmsgf_stdout);
+#else
+    jas_conf_set_vlogmsgf(jas_vlogmsgf_discard);
 #endif
 
     if (jas_init_library()) {

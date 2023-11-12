@@ -1,0 +1,14 @@
+# When compiled with Allegro 4.1, don't warn about all the deprecated 4.0
+# functions.
+CFLAGS += -Isrc -Wno-deprecated-declarations
+
+lib: libalgif.a
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+libalgif.a: src/algif.o src/gif.o src/lzw.o
+	$(AR) -rcs $@ $^
+
+clean:
+	rm -f *.a *.o *.d

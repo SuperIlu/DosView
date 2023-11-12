@@ -524,7 +524,7 @@ int jas_init_library()
 	} else {
 		max_mem = jas_global.conf.max_mem;
 	}
-	if (max_mem > total_mem_size) {
+	if (total_mem_size && max_mem > total_mem_size) {
 		jas_eprintf("WARNING: JasPer memory limit set to EXCESSIVELY "
 		  "LARGE value (i.e., limit exceeds system memory size (%zu > %zu)\n",
 		  max_mem, total_mem_size);

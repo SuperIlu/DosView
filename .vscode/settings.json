@@ -22,6 +22,12 @@
 		"type_traits": "c",
 		"utility": "c",
 		"xtr1common": "c",
-		"jasper.h": "c"
+		"jasper.h": "c",
+		"atomic": "c",
+		"xxatomic": "c",
+		"format-jasper.h": "c",
+		"format-stb.h": "c",
+		"main.h": "c",
+		"stb_image.h": "c"
 	}
 }

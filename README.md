@@ -9,6 +9,7 @@ It tries 32bpp first and 24bpp is 32bpp is not available. The default screen for
 Please note: Although `DosView` should work from a i386 upwards, this programm can eat huge amounts of RAM (>64MiB) if you feed it large images and/or screen sizes.
 
 **Binary downloads are available on the [Releases](https://github.com/SuperIlu/DosView/releases) page.**
+`UPXVIEW.EXE` is the same binary as `DOSVIEW.EXE` but compressed with [UPX 4.2.1](https://upx.github.io/).
 
 The source is on [GitHub](https://github.com/SuperIlu/DosView/)
 
@@ -28,6 +29,10 @@ The source is on [GitHub](https://github.com/SuperIlu/DosView/)
 - JPEG 2000 (using the `.JP2` file extension)
 - PBM PPM
 - RAS
+- GIF: only first image
+- PSD: composited view only, no extra channels, 8/16 bit-per-channel
+- HDR: radiance rgbE format
+- PIC: Softimage PIC, untested
 
 ### Writing
 - BMP
@@ -41,6 +46,7 @@ The source is on [GitHub](https://github.com/SuperIlu/DosView/)
 - JPEG 2000 (using the `.JP2` file extension)
 - PBM
 - RAS
+- GIF: uses dithering which is extremly slow
 
 ## Command line arguments
 ```
@@ -76,13 +82,26 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 
 # Known problems
 * error handling is a mess
-* code is badly documentes
-* can be very slow on old machines
+* code is badly documented
+* PIC is untested (I could not create an image)
+* some versions of DOSBox-X can't write TIFF images (known issue, SQLite3 has problems in these versions, too)
+* can be very slow on old machines (especially saving/dithering)
 * eats HUGE amounts of memory (we are talking >128MiB to encode a 2672x2004 JPEG2000)
 * if loading/saving fails you get no info why (if you are not running a debug build that is)
 * image conversion always needs a working display mode (Allegros fault)
 
 # Changelog
+### 1.3 / November 12th, 2023
+* added GIF
+* added PSD
+* added HDR
+* added PIC
+* added an UPX compressed EXE
+* enabled dithering
+* added 8bpp display mode
+* fixed another scaling error
+* fixed error when reading certain PNGs
+
 ### 1.2 / November 8th, 2023
 * added NetPBM formats
 * added Sun RAS format

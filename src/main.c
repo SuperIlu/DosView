@@ -4,17 +4,19 @@
 #include "main.h"
 
 #include "alpng.h"
+#include "algif.h"
 #include "format-qoi.h"
 #include "format-webp.h"
 #include "format-jpeg.h"
 #include "format-tiff.h"
-#include "format-jp2.h"
+#include "format-jasper.h"
+#include "format-stb.h"
 
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-#define FORMATS_READ "BMP, PCX, TGA, LBM, QOI, JPG, PNG, WEB, TIF, JP2"
-#define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF, JP2"
+#define FORMATS_READ "BMP, PCX, TGA, LBM, QOI, JPG, PNG, WEB, TIF, JP2\n                 GIF, PSD, HDR, PIC"
+#define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF, JP2, GIF"
 
 int output_quality = 95;
 
@@ -34,7 +36,7 @@ static gfx_mode_t all_modes[] = {{.width = 320, .height = 240, .available = 0}, 
                                  {.width = 0, .height = 0}};
 
 static void banner(FILE *out) {
-    fputs("This is DosView 1.2 (https://github.com/SuperIlu/DosView)\n", out);
+    fputs("This is DosView 1.3 (https://github.com/SuperIlu/DosView)\n", out);
     fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
     fputs("See LICENSE for detailed licensing information.\n", out);
     fputs("\n", out);
@@ -125,7 +127,12 @@ static void list_modes() {
         if (set_gfx_mode(GFX_AUTODETECT, m->width, m->height, 0, 0) != 0) {
             set_color_depth(24);
             if (set_gfx_mode(GFX_AUTODETECT, m->width, m->height, 0, 0) != 0) {
-                m->available = 0;
+                set_color_depth(8);
+                if (set_gfx_mode(GFX_AUTODETECT, m->width, m->height, 0, 0) != 0) {
+                    m->available = 0;
+                } else {
+                    m->available = get_color_depth();
+                }
             } else {
                 m->available = get_color_depth();
             }
@@ -154,18 +161,22 @@ static void list_modes() {
 
 static void register_formats() {
     alpng_init();
+    algif_init();
     register_bitmap_file_type("qoi", load_qoi, save_qoi, NULL);
     register_bitmap_file_type("web", load_webp, save_webp, NULL);
     register_bitmap_file_type("jpg", load_jpeg, save_jpeg, NULL);
     register_bitmap_file_type("tif", load_tiff, save_tiff, NULL);
-    register_bitmap_file_type("jp2", load_jp2, save_jp2, NULL);
-    register_bitmap_file_type("ras", load_jp2, save_jp2, NULL);
+    register_bitmap_file_type("jp2", load_jasper, save_jasper, NULL);
+    register_bitmap_file_type("ras", load_jasper, save_jasper, NULL);
+    register_bitmap_file_type("psd", load_stb, NULL, NULL);
+    register_bitmap_file_type("hdr", load_stb, NULL, NULL);
+    register_bitmap_file_type("pic", load_stb, NULL, NULL);
 
     // add all netpbm formats
-    register_bitmap_file_type("pnm", load_jp2, save_jp2, NULL);
-    register_bitmap_file_type("pbm", load_jp2, save_jp2, NULL);
-    register_bitmap_file_type("pgm", load_jp2, save_jp2, NULL);
-    register_bitmap_file_type("ppm", load_jp2, save_jp2, NULL);
+    register_bitmap_file_type("pnm", load_jasper, save_jasper, NULL);
+    register_bitmap_file_type("pbm", load_jasper, save_jasper, NULL);
+    register_bitmap_file_type("pgm", load_jasper, save_jasper, NULL);
+    register_bitmap_file_type("ppm", load_jasper, save_jasper, NULL);
 }
 
 static void clean_exit(int code) {
@@ -247,20 +258,34 @@ int main(int argc, char *argv[]) {
     }
 
     init_last_error();
-    register_formats();
     allegro_init();
+    register_formats();
     install_keyboard();
+    set_color_conversion(COLORCONV_DITHER);
 
     set_color_depth(32);
+    // if (!outfile) {
     if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
         set_color_depth(24);
         if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-            set_last_error("Resolution %dx%d not available: %s\n", screen_width, screen_height, allegro_error);
-            clean_exit(EXIT_SUCCESS);
+            set_color_depth(8);
+            if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
+                set_last_error("Resolution %dx%d not available: %s\n", screen_width, screen_height, allegro_error);
+                clean_exit(EXIT_SUCCESS);
+            }
         }
     }
-
     DEBUGF("%dx%d at %dbpp\n", screen_width, screen_height, get_color_depth());
+    // } else {
+    //     _rgb_r_shift_32 = 16;
+    //     _rgb_g_shift_32 = 8;
+    //     _rgb_b_shift_32 = 0;
+    //     _rgb_a_shift_32 = 24;
+    // }
+    // printf("_rgb_r_shift_32=%d", _rgb_r_shift_32);
+    // printf("_rgb_g_shift_32=%d", _rgb_g_shift_32);
+    // printf("_rgb_b_shift_32=%d", _rgb_b_shift_32);
+    // printf("_rgb_a_shift_32=%d", _rgb_a_shift_32);
 
     BITMAP *bm = load_bitmap(infile, NULL);
     if (!bm) {
@@ -268,7 +293,7 @@ int main(int argc, char *argv[]) {
         clean_exit(EXIT_SUCCESS);
     }
 
-    DEBUGF("image size = %dx%d\n", bm->w, bm->h);
+    DEBUGF("image size = %dx%d @ %dbpp\n", bm->w, bm->h, bitmap_color_depth(bm));
 
     if (!outfile) {
         // scale to "fit screen"
@@ -284,14 +309,16 @@ int main(int argc, char *argv[]) {
         scaled_width = screen_width * factor;
         scaled_height = screen_height * factor;
 
+        // convert image to display color depth
         BITMAP *tmp = create_bitmap_ex(get_color_depth(), bm->w, bm->h);
+        blit(bm, tmp, 0, 0, 0, 0, bm->w, bm->h);
+        destroy_bitmap(bm);
         while (true) {
             //////
             /// draw image
             clear_to_color(screen, 0);
 
             DEBUGF("stretch_blit(%d, %d, %d, %d, %d, %d, %d, %d)\n", x_start, y_start, scaled_width, scaled_height, 0, 0, screen_width, screen_height);
-            blit(bm, tmp, 0, 0, 0, 0, bm->w, bm->h);
             stretch_blit(tmp, screen, x_start, y_start, scaled_width, scaled_height, 0, 0, screen_width, screen_height);
 
             //////
@@ -301,7 +328,7 @@ int main(int argc, char *argv[]) {
                 int xPos = 20;
                 int yPos = 10;
                 int width = 25 * 8;
-                int height = ySpacing * 8;
+                int height = ySpacing * 9;
                 if (strlen(infile) > 9) {
                     width += (strlen(infile) - 9) * 8;
                 }
@@ -314,9 +341,11 @@ int main(int argc, char *argv[]) {
                 int txt_col = makecol(161, 21, 158);
                 textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Filename    : %s", infile);
                 yPos += ySpacing;
-                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Image size  : %04dx%04d", bm->w, bm->h);
+                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Image size  : %04dx%04d", tmp->w, tmp->h);
                 yPos += ySpacing;
                 textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Screen size : %04dx%04d", screen_width, screen_height);
+                yPos += ySpacing;
+                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Screen bpp  : %dbpp", get_color_depth());
                 yPos += ySpacing;
                 textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Scaled size : %04dx%04d", scaled_width, scaled_height);
                 yPos += ySpacing;
@@ -361,7 +390,7 @@ int main(int argc, char *argv[]) {
                     x_start -= stepsize;
                 }
             } else if ((key_upper == KEY_RIGHT) || (key_lower == '6')) {
-                if (x_start + screen_width < bm->w) {
+                if (x_start + screen_width < tmp->w) {
                     x_start += stepsize;
                 }
             } else if ((key_upper == KEY_UP) || (key_lower == '8')) {
@@ -369,7 +398,7 @@ int main(int argc, char *argv[]) {
                     y_start -= stepsize;
                 }
             } else if ((key_upper == KEY_DOWN) || (key_lower == '2')) {
-                if (y_start + screen_height < bm->h) {
+                if (y_start + screen_height < tmp->h) {
                     y_start += stepsize;
                 }
             } else if ((key_upper == KEY_PGDN) || (key_lower == '3')) {
@@ -377,7 +406,7 @@ int main(int argc, char *argv[]) {
             } else if ((key_upper == KEY_PGUP) || (key_lower == '9')) {
                 factor -= scale_step;
             } else if ((key_lower == 'F') || (key_lower == 'f')) {
-                factor = (float)bm->w / (float)screen_width;  // fit on screen
+                factor = (float)tmp->w / (float)screen_width;  // fit on screen
             } else if ((key_lower == 'Z') || (key_lower == 'z')) {
                 factor = 1.0f;  // full zoom
             } else if ((key_lower == 'i') || (key_lower == 'i')) {
@@ -389,11 +418,11 @@ int main(int argc, char *argv[]) {
             scaled_width = screen_width * factor;
             scaled_height = screen_height * factor;
 
-            if (scaled_width >= bm->w) {
-                factor = (float)bm->w / (float)screen_width;
+            if (scaled_width >= tmp->w) {
+                factor = (float)tmp->w / (float)screen_width;
             }
-            if (scaled_height >= bm->h) {
-                factor = (float)bm->h / (float)screen_height;
+            if (scaled_height >= tmp->h) {
+                factor = (float)tmp->h / (float)screen_height;
             }
             if (factor < 1.0f) {
                 factor = 1.0f;
@@ -402,11 +431,16 @@ int main(int argc, char *argv[]) {
             scaled_width = screen_width * factor;
             scaled_height = screen_height * factor;
 
-            if (x_start + scaled_width >= bm->w) {
-                x_start = bm->w - scaled_width - 1;
+            if ((scaled_width > tmp->w) || (scaled_height > tmp->h)) {
+                scaled_width = tmp->w;
+                scaled_height = tmp->h;
             }
-            if (y_start + scaled_height >= bm->h) {
-                y_start = bm->h - scaled_height - 1;
+
+            if (x_start + scaled_width >= tmp->w) {
+                x_start = tmp->w - scaled_width - 1;
+            }
+            if (y_start + scaled_height >= tmp->h) {
+                y_start = tmp->h - scaled_height - 1;
             }
             if (x_start < 0) {
                 x_start = 0;

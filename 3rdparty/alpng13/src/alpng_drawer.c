@@ -57,7 +57,7 @@ BITMAP* alpng_draw(struct alpng_header* header, uint8_t* data, uint32_t data_len
     if (!alpng_unfilter(data, header)) {
         return 0;
     }
-    
+
     switch (header->type) {
         case 0:
             if (header->depth == 16) {
@@ -91,7 +91,7 @@ BITMAP* alpng_draw(struct alpng_header* header, uint8_t* data, uint32_t data_len
             }
             break;
     }
-    
+
     return b;
 }
 
@@ -194,16 +194,17 @@ static BITMAP* read_rgb16(uint8_t* data, uint32_t data_length, struct alpng_head
         alpng_error_msg = "Bad data length!";
         return 0;
     }
-    b = create_bitmap_ex(24, header->width, header->height);
+    b = create_bitmap_ex(32, header->width, header->height);
     if (!b) {
         alpng_error_msg = "Cannot allocate bitmap!";
         return 0;
     }
     for (y = 0; y < header->height; y++) {
         for (x = 0; x < header->width; x++) {
-            b->line[y][x * 3 + _rgb_r_shift_24 / 8] = data[1 + y * header->byte_width + x * 6];
-            b->line[y][x * 3 + _rgb_g_shift_24 / 8] = data[3 + y * header->byte_width + x * 6];
-            b->line[y][x * 3 + _rgb_b_shift_24 / 8] = data[5 + y * header->byte_width + x * 6];
+            b->line[y][x * 4 + _rgb_r_shift_32 / 8] = data[1 + y * header->byte_width + x * 6];
+            b->line[y][x * 4 + _rgb_g_shift_32 / 8] = data[3 + y * header->byte_width + x * 6];
+            b->line[y][x * 4 + _rgb_b_shift_32 / 8] = data[5 + y * header->byte_width + x * 6];
+            b->line[y][x * 4 + _rgb_a_shift_32 / 8] = 0xFF;
         }
     }
     return b;
@@ -216,16 +217,17 @@ static BITMAP* read_rgb8(uint8_t* data, uint32_t data_length, struct alpng_heade
         alpng_error_msg = "Bad data length!";
         return 0;
     }
-    b = create_bitmap_ex(24, header->width, header->height);
+    b = create_bitmap_ex(32, header->width, header->height);
     if (!b) {
         alpng_error_msg = "Cannot allocate bitmap!";
         return 0;
     }
     for (y = 0; y < header->height; y++) {
         for (x = 0; x < header->width; x++) {
-            b->line[y][x * 3 + _rgb_r_shift_24 / 8] = data[1 + y * header->byte_width + x * 3];
-            b->line[y][x * 3 + _rgb_g_shift_24 / 8] = data[2 + y * header->byte_width + x * 3];
-            b->line[y][x * 3 + _rgb_b_shift_24 / 8] = data[3 + y * header->byte_width + x * 3];
+            b->line[y][x * 4 + _rgb_r_shift_32 / 8] = data[1 + y * header->byte_width + x * 3];
+            b->line[y][x * 4 + _rgb_g_shift_32 / 8] = data[2 + y * header->byte_width + x * 3];
+            b->line[y][x * 4 + _rgb_b_shift_32 / 8] = data[3 + y * header->byte_width + x * 3];
+            b->line[y][x * 4 + _rgb_a_shift_32 / 8] = 0xFF;
         }
     }
     return b;
@@ -238,16 +240,17 @@ static BITMAP* read_grayscale16(uint8_t* data, uint32_t data_length, struct alpn
         alpng_error_msg = "Bad data length!";
         return 0;
     }
-    b = create_bitmap_ex(24, header->width, header->height);
+    b = create_bitmap_ex(32, header->width, header->height);
     if (!b) {
         alpng_error_msg = "Cannot allocate bitmap!";
         return 0;
     }
     for (y = 0; y < header->height; y++) {
         for (x = 0; x < header->width; x++) {
-            b->line[y][x * 3 + _rgb_r_shift_24 / 8] = data[1 + y * header->byte_width + x * 2];
-            b->line[y][x * 3 + _rgb_g_shift_24 / 8] = data[1 + y * header->byte_width + x * 2];
-            b->line[y][x * 3 + _rgb_b_shift_24 / 8] = data[1 + y * header->byte_width + x * 2];
+            b->line[y][x * 4 + _rgb_r_shift_32 / 8] = data[1 + y * header->byte_width + x * 2];
+            b->line[y][x * 4 + _rgb_g_shift_32 / 8] = data[1 + y * header->byte_width + x * 2];
+            b->line[y][x * 4 + _rgb_b_shift_32 / 8] = data[1 + y * header->byte_width + x * 2];
+            b->line[y][x * 4 + _rgb_a_shift_32 / 8] = 0xFF;
         }
     }
     return b;
@@ -279,7 +282,7 @@ static BITMAP* read_grayscale(uint8_t* data, uint32_t data_length, struct alpng_
         alpng_error_msg = "Bad data length!";
         return 0;
     }
-    b = create_bitmap_ex(24, header->width, header->height);
+    b = create_bitmap_ex(32, header->width, header->height);
     if (!b) {
         alpng_error_msg = "Cannot allocate bitmap!";
         return 0;
@@ -296,7 +299,7 @@ static BITMAP* read_grayscale(uint8_t* data, uint32_t data_length, struct alpng_
                 }
                 sample = (data[y * header->byte_width + x + 1] & (mask << (header->depth * sx))) >> (header->depth * sx);
                 sample *= sample_multiple;
-                b->line[y][i * 3]     = sample;
+                b->line[y][i * 3] = sample;
                 b->line[y][i * 3 + 1] = sample;
                 b->line[y][i * 3 + 2] = sample;
                 i++;
@@ -337,5 +340,3 @@ static BITMAP* read_paletted(uint8_t* data, uint32_t data_length, struct alpng_h
     }
     return b;
 }
-
-

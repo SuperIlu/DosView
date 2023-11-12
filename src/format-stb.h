@@ -20,12 +20,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __FORMAT_JP2_H__
-#define __FORMAT_JP2__
+#ifndef __FORMAT_STB__
+#define __FORMAT_STB__
 
 #include "main.h"
 
-extern BITMAP *load_jp2(AL_CONST char *filename, RGB *pal);
-extern int save_jp2(AL_CONST char *fname, BITMAP *bm, AL_CONST RGB *pal);
+extern BITMAP *load_stb(AL_CONST char *filename, RGB *pal);
+extern int save_stb(AL_CONST char *fname, BITMAP *bm, AL_CONST RGB *pal);
 
-#endif  // __FORMAT_JP2__
+#endif  // __FORMAT_STB__
