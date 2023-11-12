@@ -36,7 +36,7 @@ static gfx_mode_t all_modes[] = {{.width = 320, .height = 240, .available = 0}, 
                                  {.width = 0, .height = 0}};
 
 static void banner(FILE *out) {
-    fputs("This is DosView 1.3 (https://github.com/SuperIlu/DosView)\n", out);
+    fputs("This is DosView 1.3.1 (https://github.com/SuperIlu/DosView)\n", out);
     fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
     fputs("See LICENSE for detailed licensing information.\n", out);
     fputs("\n", out);
@@ -261,7 +261,7 @@ int main(int argc, char *argv[]) {
     allegro_init();
     register_formats();
     install_keyboard();
-    set_color_conversion(COLORCONV_DITHER);
+    set_color_conversion(COLORCONV_TOTAL);
 
     set_color_depth(32);
     // if (!outfile) {
@@ -287,7 +287,8 @@ int main(int argc, char *argv[]) {
     // printf("_rgb_b_shift_32=%d", _rgb_b_shift_32);
     // printf("_rgb_a_shift_32=%d", _rgb_a_shift_32);
 
-    BITMAP *bm = load_bitmap(infile, NULL);
+    PALETTE pal;
+    BITMAP *bm = load_bitmap(infile, pal);
     if (!bm) {
         set_last_error("Can't load image %s", infile);
         clean_exit(EXIT_SUCCESS);
@@ -296,6 +297,10 @@ int main(int argc, char *argv[]) {
     DEBUGF("image size = %dx%d @ %dbpp\n", bm->w, bm->h, bitmap_color_depth(bm));
 
     if (!outfile) {
+        if (get_color_depth() == 8) {
+            set_palette(pal);
+        }
+
         // scale to "fit screen"
         factor = (float)bm->w / (float)screen_width;
         scaled_width = screen_width * factor;

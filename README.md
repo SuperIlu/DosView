@@ -91,6 +91,9 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * image conversion always needs a working display mode (Allegros fault)
 
 # Changelog
+### 1.3.1 / November 12th, 2023
+* fixed color palette error
+
 ### 1.3 / November 12th, 2023
 * added GIF
 * added PSD
