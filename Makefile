@@ -130,14 +130,15 @@ $(BUILDDIR)/loadpng/%.o: $(LOADPNG)/%.c Makefile
 
 zip: all
 	rm -f $(RELZIP)
-	zip -9 -r $(RELZIP) $(EXE) CWSDPMI.EXE LICENSE *.md
+	upx -9 -oupxview.exe $(EXE)
+	zip -9 -r $(RELZIP) $(EXE) upxview.exe CWSDPMI.EXE LICENSE *.md
 
 init: configure_tiff
 	mkdir -p $(BUILDDIR) $(BUILDDIR)/loadpng
 
 clean:
 	rm -rf $(BUILDDIR)/
-	rm -f $(EXE) $(ZIP)
+	rm -f $(EXE) $(ZIP) upxview.exe UPXVIEW.EXE
 
 distclean: clean zclean alclean webpclean jpegclean distclean_tiff jasperclean alpngclean algifclean
 	rm -f OUT.* LOW.*

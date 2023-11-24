@@ -15,6 +15,10 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
+#define DEFAULT_MODE 1
+
+#define MIN_ZOOM 100
+
 #define FORMATS_READ "BMP, PCX, TGA, LBM, QOI, JPG, PNG, WEB, TIF, JP2\n                 GIF, PSD, HDR, PIC"
 #define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF, JP2, GIF"
 
@@ -28,15 +32,18 @@ typedef struct {
 
 static char *lastError;
 
-static gfx_mode_t all_modes[] = {{.width = 320, .height = 240, .available = 0},   // 320x240
-                                 {.width = 640, .height = 480, .available = 0},   // 640x480
-                                 {.width = 800, .height = 600, .available = 0},   // 800x600
-                                 {.width = 1024, .height = 768, .available = 0},  // 1024x768
-                                 {.width = 1280, .height = 960, .available = 0},  // 1280x960
+static gfx_mode_t all_modes[] = {{.width = 320, .height = 240, .available = 0},    // 320x240
+                                 {.width = 640, .height = 480, .available = 0},    // 640x480
+                                 {.width = 800, .height = 600, .available = 0},    // 800x600
+                                 {.width = 1024, .height = 768, .available = 0},   // 1024x768
+                                 {.width = 1280, .height = 960, .available = 0},   // 1280x960
+                                 {.width = 1280, .height = 1024, .available = 0},  // 1280x1024
+                                 {.width = 1600, .height = 1200, .available = 0},  // 1600x1200
+                                 {.width = 1920, .height = 1080, .available = 0},  // 1920x1080
                                  {.width = 0, .height = 0}};
 
 static void banner(FILE *out) {
-    fputs("This is DosView 1.3.1 (https://github.com/SuperIlu/DosView)\n", out);
+    fputs("This is DosView 1.4 (https://github.com/SuperIlu/DosView)\n", out);
     fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
     fputs("See LICENSE for detailed licensing information.\n", out);
     fputs("\n", out);
@@ -45,11 +52,11 @@ static void banner(FILE *out) {
 static void usage() {
     banner(stderr);
     fputs("Usage:\n", stderr);
-    fputs("  DOSVIEW.EXE [-hkl] [-q <quality>] [-w <width>] [-s <outfile>] <infile>\n", stderr);
-    fputs("  -h           : show this screen\n", stderr);
-    fputs("  -k           : keys help\n", stderr);
-    fputs("  -l           : list know screen modes\n", stderr);
-    fputs("  -w <width>   : screen width to use.\n", stderr);
+    fputs("  DOSVIEW.EXE [-hkl] [-q <quality>] [-r <num>] [-s <outfile>] <infile>\n", stderr);
+    fputs("  -h           : show this screen.\n", stderr);
+    fputs("  -k           : keys help.\n", stderr);
+    fputs("  -l           : list know screen modes.\n", stderr);
+    fputs("  -r <num>     : screen mode to use (use -l for a list).\n", stderr);
     fputs("  -s <outfile> : do not show the image, save it to outfile instead.\n", stderr);
     fputs("  -f <factor>  : scale saved image, <1 reduce, >1 enlarge (float).\n", stderr);
     fputs("  -q <quality> : Quality for writing JPG/WEP/JP2 image (1..100). Default: 95\n", stderr);
@@ -116,30 +123,26 @@ static void set_last_error(const char *err, ...) {
 }
 
 static void list_modes() {
-    gfx_mode_t *m;
-
     // check available modes
     init_last_error();
     allegro_init();
-    m = &all_modes[0];
-    while (m->width) {
+    for (int i = 0; all_modes[i].width; i++) {
         set_color_depth(32);
-        if (set_gfx_mode(GFX_AUTODETECT, m->width, m->height, 0, 0) != 0) {
+        if (set_gfx_mode(GFX_AUTODETECT, all_modes[i].width, all_modes[i].height, 0, 0) != 0) {
             set_color_depth(24);
-            if (set_gfx_mode(GFX_AUTODETECT, m->width, m->height, 0, 0) != 0) {
+            if (set_gfx_mode(GFX_AUTODETECT, all_modes[i].width, all_modes[i].height, 0, 0) != 0) {
                 set_color_depth(8);
-                if (set_gfx_mode(GFX_AUTODETECT, m->width, m->height, 0, 0) != 0) {
-                    m->available = 0;
+                if (set_gfx_mode(GFX_AUTODETECT, all_modes[i].width, all_modes[i].height, 0, 0) != 0) {
+                    all_modes[i].available = 0;
                 } else {
-                    m->available = get_color_depth();
+                    all_modes[i].available = get_color_depth();
                 }
             } else {
-                m->available = get_color_depth();
+                all_modes[i].available = get_color_depth();
             }
         } else {
-            m->available = get_color_depth();
+            all_modes[i].available = get_color_depth();
         }
-        m++;
     }
     allegro_exit();
     textmode(C80);
@@ -147,14 +150,12 @@ static void list_modes() {
     // print available modes
     banner(stdout);
     fprintf(stdout, "Display modes:\n");
-    m = &all_modes[0];
-    while (m->width) {
-        if (m->available) {
-            fprintf(stdout, "  %4dx%4d := %dbpp\n", m->width, m->height, m->available);
+    for (int i = 0; all_modes[i].width; i++) {
+        if (all_modes[i].available) {
+            fprintf(stdout, "  #% 2d: %4dx%4d := %dbpp %s\n", i, all_modes[i].width, all_modes[i].height, all_modes[i].available, i == DEFAULT_MODE ? "(default)" : "");
         } else {
-            fprintf(stdout, "  %4dx%4d := UNAVAILABLE\n", m->width, m->height);
+            fprintf(stdout, "  #% 2d: %4dx%4d := UNAVAILABLE %s\n", i, all_modes[i].width, all_modes[i].height, i == DEFAULT_MODE ? "(default)" : "");
         }
-        m++;
     }
     exit(EXIT_FAILURE);
 }
@@ -195,7 +196,8 @@ int main(int argc, char *argv[]) {
     int opt = 0;
     char *infile = NULL;
     char *outfile = NULL;
-    int screen_width = 640;
+    int mode = DEFAULT_MODE;
+    int screen_width = 0;
     int screen_height = 0;
     int x_start = 0;
     int y_start = 0;
@@ -205,10 +207,10 @@ int main(int argc, char *argv[]) {
     bool image_info = false;
     float scale = 1.0f;
 
-    while ((opt = getopt(argc, argv, "klhw:s:q:f:")) != -1) {
+    while ((opt = getopt(argc, argv, "klhr:s:q:f:")) != -1) {
         switch (opt) {
-            case 'w':
-                screen_width = atoi(optarg);
+            case 'r':
+                mode = atoi(optarg);
                 break;
             case 'q':
                 output_quality = atoi(optarg);
@@ -242,18 +244,15 @@ int main(int argc, char *argv[]) {
         usage();
     }
 
-    gfx_mode_t *m = &all_modes[0];
-    while (m->width) {
-        if (screen_width == m->width) {
-            screen_height = m->height;
-            break;
-        } else {
-            m++;
+    for (int i = 0; all_modes[i].width; i++) {
+        if (i == mode) {
+            screen_width = all_modes[i].width;
+            screen_height = all_modes[i].height;
         }
     }
 
-    if (!screen_height) {
-        fprintf(stderr, "Unknown screen width %d\n", screen_width);
+    if (!screen_width || !screen_height) {
+        fprintf(stderr, "Unknown screen mode %d\n", mode);
         list_modes();
     }
 
@@ -301,30 +300,60 @@ int main(int argc, char *argv[]) {
             set_palette(pal);
         }
 
-        // scale to "fit screen"
-        factor = (float)bm->w / (float)screen_width;
-        scaled_width = screen_width * factor;
-        scaled_height = screen_height * factor;
-        if (scaled_width >= bm->w) {
-            factor = (float)bm->w / (float)screen_width;
-        }
-        if (scaled_height >= bm->h) {
-            factor = (float)bm->h / (float)screen_height;
-        }
-        scaled_width = screen_width * factor;
-        scaled_height = screen_height * factor;
-
         // convert image to display color depth
         BITMAP *tmp = create_bitmap_ex(get_color_depth(), bm->w, bm->h);
         blit(bm, tmp, 0, 0, 0, 0, bm->w, bm->h);
         destroy_bitmap(bm);
+
+        // scale to "fit screen" factor
+        if (tmp->w > tmp->h) {
+            factor = (float)screen_width / (float)tmp->w;
+        } else {
+            factor = (float)screen_height / (float)tmp->h;
+        }
+
+        // calculate the scaled size of the image
+        scaled_width = tmp->w * factor;
+        scaled_height = tmp->h * factor;
+
         while (true) {
             //////
             /// draw image
             clear_to_color(screen, 0);
 
-            DEBUGF("stretch_blit(%d, %d, %d, %d, %d, %d, %d, %d)\n", x_start, y_start, scaled_width, scaled_height, 0, 0, screen_width, screen_height);
-            stretch_blit(tmp, screen, x_start, y_start, scaled_width, scaled_height, 0, 0, screen_width, screen_height);
+            DEBUGF("start = %dx%d, factor=%f, scaled=%dx%d\n", x_start, y_start, factor, scaled_width, scaled_height);
+            int src_x, src_y, src_w, src_h, dest_x, dest_y, dest_w, dest_h;
+
+            if (scaled_width <= screen_width) {
+                DEBUG("W1\n");
+                src_x = 0;
+                src_w = tmp->w;
+                dest_x = (screen_width / 2 - scaled_width / 2);
+                dest_w = scaled_width;
+            } else {
+                DEBUG("W2\n");
+                src_x = x_start;
+                src_w = (tmp->w * screen_width) / scaled_width;
+                dest_x = 0;
+                dest_w = screen_width;
+            }
+
+            if (scaled_height <= screen_height) {
+                DEBUG("H1\n");
+                src_y = 0;
+                src_h = tmp->h;
+                dest_y = (screen_height / 2 - scaled_height / 2);
+                dest_h = scaled_height;
+            } else {
+                DEBUG("H2\n");
+                src_y = y_start;
+                src_h = (tmp->h * screen_height) / scaled_height;
+                dest_y = 0;
+                dest_h = screen_height;
+            }
+
+            DEBUGF("stretch_blit(%d, %d, %d, %d ==> %d, %d, %d, %d)\n", src_x, src_y, src_w, src_h, dest_x, dest_y, dest_w, dest_h);
+            stretch_blit(tmp, screen, src_x, src_y, src_w, src_h, dest_x, dest_y, dest_w, dest_h);
 
             //////
             /// draw image
@@ -373,18 +402,18 @@ int main(int argc, char *argv[]) {
 
             // modifiers
             int stepsize = 2;
-            float scale_step = 0.1f;
+            float scale_step = 1.1f;
             if (key_shifts & KB_SHIFT_FLAG) {
                 stepsize *= 2;
-                scale_step *= 2.0f;
+                scale_step *= 2;
             }
             if (key_shifts & KB_CTRL_FLAG) {
                 stepsize *= 4;
-                scale_step *= 4.0f;
+                scale_step *= 4;
             }
             if (key_shifts & KB_ALT_FLAG) {
                 stepsize *= 8;
-                scale_step *= 8.0f;
+                scale_step *= 8;
             }
 
             // keys
@@ -395,7 +424,7 @@ int main(int argc, char *argv[]) {
                     x_start -= stepsize;
                 }
             } else if ((key_upper == KEY_RIGHT) || (key_lower == '6')) {
-                if (x_start + screen_width < tmp->w) {
+                if ((scaled_width > screen_width) && (x_start + src_w < tmp->w)) {
                     x_start += stepsize;
                 }
             } else if ((key_upper == KEY_UP) || (key_lower == '8')) {
@@ -403,15 +432,24 @@ int main(int argc, char *argv[]) {
                     y_start -= stepsize;
                 }
             } else if ((key_upper == KEY_DOWN) || (key_lower == '2')) {
-                if (y_start + screen_height < tmp->h) {
+                if ((scaled_height > screen_height) && (y_start + screen_height < tmp->h)) {
                     y_start += stepsize;
                 }
             } else if ((key_upper == KEY_PGDN) || (key_lower == '3')) {
-                factor += scale_step;
+                DEBUGF("factor = %f, scale_step = %f, new_factor = %f\n", factor, scale_step, factor / scale_step);
+                if ((scaled_width >= screen_width / MIN_ZOOM) && (scaled_height >= screen_height / MIN_ZOOM)) {
+                    factor /= scale_step;
+                }
             } else if ((key_upper == KEY_PGUP) || (key_lower == '9')) {
-                factor -= scale_step;
+                DEBUGF("factor = %f, scale_step = %f, new_factor = %f\n", factor, scale_step, factor * scale_step);
+                factor *= scale_step;
             } else if ((key_lower == 'F') || (key_lower == 'f')) {
-                factor = (float)tmp->w / (float)screen_width;  // fit on screen
+                // fit on screen
+                if (tmp->w > tmp->h) {
+                    factor = (float)screen_width / (float)tmp->w;
+                } else {
+                    factor = (float)screen_height / (float)tmp->h;
+                }
             } else if ((key_lower == 'Z') || (key_lower == 'z')) {
                 factor = 1.0f;  // full zoom
             } else if ((key_lower == 'i') || (key_lower == 'i')) {
@@ -420,41 +458,29 @@ int main(int argc, char *argv[]) {
 
             //////
             // sanitychecks
-            scaled_width = screen_width * factor;
-            scaled_height = screen_height * factor;
+            scaled_width = tmp->w * factor;
+            scaled_height = tmp->h * factor;
 
-            if (scaled_width >= tmp->w) {
-                factor = (float)tmp->w / (float)screen_width;
-            }
-            if (scaled_height >= tmp->h) {
-                factor = (float)tmp->h / (float)screen_height;
-            }
-            if (factor < 1.0f) {
-                factor = 1.0f;
+            if (scaled_width > screen_width) {
+                src_w = (tmp->w * screen_width) / scaled_width;
+                if (x_start + src_w >= tmp->w) {
+                    x_start = tmp->w - src_w - 1;
+                }
             }
 
-            scaled_width = screen_width * factor;
-            scaled_height = screen_height * factor;
-
-            if ((scaled_width > tmp->w) || (scaled_height > tmp->h)) {
-                scaled_width = tmp->w;
-                scaled_height = tmp->h;
+            if (scaled_height > screen_height) {
+                src_h = (tmp->h * screen_height) / scaled_height;
+                if (y_start + src_h >= tmp->h) {
+                    y_start = tmp->h - src_h - 1;
+                }
             }
 
-            if (x_start + scaled_width >= tmp->w) {
-                x_start = tmp->w - scaled_width - 1;
-            }
-            if (y_start + scaled_height >= tmp->h) {
-                y_start = tmp->h - scaled_height - 1;
-            }
             if (x_start < 0) {
                 x_start = 0;
             }
             if (y_start < 0) {
                 y_start = 0;
             }
-
-            DEBUGF("start = %dx%d, stepsize = %d, factor=%f, scale_step=%f, scaled=%dx%d\n", x_start, y_start, stepsize, factor, scale_step, scaled_width, scaled_height);
         }
         destroy_bitmap(tmp);
     } else {

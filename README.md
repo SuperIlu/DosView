@@ -51,10 +51,10 @@ The source is on [GitHub](https://github.com/SuperIlu/DosView/)
 ## Command line arguments
 ```
 Usage:
-  DOSVIEW.EXE [-hbl] [-q <quality>] [-w <width>] [-s <outfile>] <infile>
-  -h           : show this screen
-  -l           : list know screen modes
-  -w <width>   : screen width to use.
+  DOSVIEW.EXE [-hkl] [-q <quality>] [-r <num>] [-s <outfile>] <infile>
+  -h           : show this screen.
+  -l           : list know screen modes.
+  -r <num>     : screen mode to use (use -l for a list).
   -s <outfile> : do not show the image, save it to outfile instead.
   -f <factor>  : scale saved image, <1 reduce, >1 enlarge (float).
   -q <quality> : Quality for writing JPG/WEP/JP2 image (1..100). Default: 95
@@ -91,6 +91,10 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * image conversion always needs a working display mode (Allegros fault)
 
 # Changelog
+### 1.4 / November 24th, 2023
+* new screen resolutions and change in command line
+* (hopefully) fixed bug in image zooming when image was not 4:3 and a multiple of the resolution
+
 ### 1.3.1 / November 12th, 2023
 * fixed color palette error
 
