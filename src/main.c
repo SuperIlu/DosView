@@ -19,36 +19,37 @@
 
 #define MIN_ZOOM 100
 
-#define FORMATS_READ "BMP, PCX, TGA, LBM, QOI, JPG, PNG, WEB, TIF, JP2\n                 GIF, PSD, HDR, PIC"
-#define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF, JP2, GIF"
+#define FORMATS_READ "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF, JP2, GIF\n                 PNM, PBM, PGM, PPM, LBM, PSD, HDR, PIC"
+#define FORMATS_WRITE "BMP, PCX, TGA, QOI, JPG, PNG, WEB, TIF, JP2, GIF\n                 PNM, PBM, PGM, PPM"
 
 int output_quality = 95;
 
-typedef struct {
+typedef struct __gfx_mode gfx_mode_t;
+
+struct __gfx_mode {
+    gfx_mode_t *next;
     int width;
     int height;
-    int available;
-} gfx_mode_t;
+    int bpp;
+};
 
 static char *lastError;
 
-static gfx_mode_t all_modes[] = {{.width = 320, .height = 240, .available = 0},    // 320x240
-                                 {.width = 640, .height = 480, .available = 0},    // 640x480
-                                 {.width = 800, .height = 600, .available = 0},    // 800x600
-                                 {.width = 1024, .height = 768, .available = 0},   // 1024x768
-                                 {.width = 1280, .height = 960, .available = 0},   // 1280x960
-                                 {.width = 1280, .height = 1024, .available = 0},  // 1280x1024
-                                 {.width = 1600, .height = 1200, .available = 0},  // 1600x1200
-                                 {.width = 1920, .height = 1080, .available = 0},  // 1920x1080
-                                 {.width = 0, .height = 0}};
-
+/**
+ * @brief print our banner.
+ *
+ * @param out stream to use
+ */
 static void banner(FILE *out) {
-    fputs("This is DosView 1.4 (https://github.com/SuperIlu/DosView)\n", out);
+    fputs("This is DosView 1.5 (https://github.com/SuperIlu/DosView)\n", out);
     fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
     fputs("See LICENSE for detailed licensing information.\n", out);
     fputs("\n", out);
 }
 
+/**
+ * @brief print usage to stderr
+ */
 static void usage() {
     banner(stderr);
     fputs("Usage:\n", stderr);
@@ -67,6 +68,9 @@ static void usage() {
     exit(EXIT_FAILURE);
 }
 
+/**
+ * @brief print key help to stderr
+ */
 static void keys() {
     banner(stderr);
     fputs("Keys:\n", stderr);
@@ -122,44 +126,118 @@ static void set_last_error(const char *err, ...) {
     }
 }
 
-static void list_modes() {
-    // check available modes
-    init_last_error();
-    allegro_init();
-    for (int i = 0; all_modes[i].width; i++) {
-        set_color_depth(32);
-        if (set_gfx_mode(GFX_AUTODETECT, all_modes[i].width, all_modes[i].height, 0, 0) != 0) {
-            set_color_depth(24);
-            if (set_gfx_mode(GFX_AUTODETECT, all_modes[i].width, all_modes[i].height, 0, 0) != 0) {
-                set_color_depth(8);
-                if (set_gfx_mode(GFX_AUTODETECT, all_modes[i].width, all_modes[i].height, 0, 0) != 0) {
-                    all_modes[i].available = 0;
-                } else {
-                    all_modes[i].available = get_color_depth();
-                }
-            } else {
-                all_modes[i].available = get_color_depth();
+/**
+ * @brief add the given mode to the list (if not already in there).
+ * Allegro returns the modes sorted, so by eliminating duplicates we don't have to sort again, but simply append at the end.
+ * Modes smaller than 320x200 or with less than 8bpp are ignored!
+ *
+ * @param modes pointer to modes list.
+ * @param width screen width
+ * @param height screen height
+ * @param bpp bits per pixel
+ */
+static void add_mode(gfx_mode_t **modes, int width, int height, int bpp) {
+    if (width < 320 || height < 200 || bpp < 8) {
+        return;
+    }
+
+    // check if we already have that mode
+    if (*modes) {
+        gfx_mode_t *m = *modes;
+        while (m->next) {
+            if (m->width == width && m->height == height && m->bpp == bpp) {
+                DEBUGF("duplicate %dx%dx%d\n", width, height, bpp);
+                return;
             }
-        } else {
-            all_modes[i].available = get_color_depth();
+            m = m->next;
         }
     }
-    allegro_exit();
-    textmode(C80);
 
-    // print available modes
+    gfx_mode_t *mode = calloc(1, sizeof(gfx_mode_t));
+    if (!mode) {
+        fputs("OUT OF MEMORY\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+    mode->width = width;
+    mode->height = height;
+    mode->bpp = bpp;
+
+    // put into list
+    if (*modes == NULL) {
+        // first entry
+        *modes = mode;
+    } else {
+        // put at end of list
+        gfx_mode_t *prev = *modes;
+        while (prev->next) {
+            prev = prev->next;
+        }
+
+        prev->next = mode;
+    }
+}
+
+/**
+ * @brief Get the supported screen modes
+ *
+ * @return gfx_mode_t* a list of modes or NULL if no mode found
+ */
+static gfx_mode_t *get_supported_modes() {
+    gfx_mode_t *modes = NULL;
+
+    _DRIVER_INFO *driver_info;
+    if (system_driver->gfx_drivers) {
+        driver_info = system_driver->gfx_drivers();
+    } else {
+        driver_info = _gfx_driver_list;
+    }
+
+    for (int d = 0; driver_info[d].driver; d++) {
+        GFX_DRIVER *gfx_driver = driver_info[d].driver;
+        DEBUGF("found driver #%d: %s\n", d, gfx_driver->ascii_name);
+        GFX_MODE_LIST *gfx_mode_list = get_gfx_mode_list(gfx_driver->id);
+        if (gfx_mode_list) {
+            DEBUGF("it has %d modes\n", gfx_mode_list->num_modes);
+            for (int m = 0; m < gfx_mode_list->num_modes; m++) {
+                add_mode(&modes, gfx_mode_list->mode[m].width, gfx_mode_list->mode[m].height, gfx_mode_list->mode[m].bpp);
+            }
+            destroy_gfx_mode_list(gfx_mode_list);
+        }
+    }
+
+    return modes;
+}
+
+/**
+ * @brief print the list of know modes to stdout
+ */
+static void list_modes(gfx_mode_t *modes) {
+    if (!modes) {
+        init_last_error();
+        allegro_init();
+        modes = get_supported_modes();
+    }
+
     banner(stdout);
     fprintf(stdout, "Display modes:\n");
-    for (int i = 0; all_modes[i].width; i++) {
-        if (all_modes[i].available) {
-            fprintf(stdout, "  #% 2d: %4dx%4d := %dbpp %s\n", i, all_modes[i].width, all_modes[i].height, all_modes[i].available, i == DEFAULT_MODE ? "(default)" : "");
+    int i = 0;
+    while (modes) {
+        // [01] 0000x0000x00   [01] 0000x0000x00   [01] 0000x0000x00   [01] 0000x0000x00
+        if (((i + 1) % 4) == 0) {
+            fprintf(stdout, "[%2d] %4dx%4dx%2d\n", i, modes->width, modes->height, modes->bpp);
         } else {
-            fprintf(stdout, "  #% 2d: %4dx%4d := UNAVAILABLE %s\n", i, all_modes[i].width, all_modes[i].height, i == DEFAULT_MODE ? "(default)" : "");
+            fprintf(stdout, "[%2d] %4dx%4dx%2d   ", i, modes->width, modes->height, modes->bpp);
         }
+        i++;
+        modes = modes->next;
     }
+    allegro_exit();
     exit(EXIT_FAILURE);
 }
 
+/**
+ * @brief register known file formats
+ */
 static void register_formats() {
     alpng_init();
     algif_init();
@@ -180,6 +258,11 @@ static void register_formats() {
     register_bitmap_file_type("ppm", load_jasper, save_jasper, NULL);
 }
 
+/**
+ * @brief exit allegro cleanly
+ *
+ * @param code return code.
+ */
 static void clean_exit(int code) {
     allegro_exit();
     // textmode(C80);
@@ -192,11 +275,20 @@ static void clean_exit(int code) {
     exit(code);
 }
 
+/**
+ * @brief main entry point
+ *
+ * @param argc number of command line arguments
+ * @param argv array of command line arguments
+ *
+ * @return int 0 for success
+ */
 int main(int argc, char *argv[]) {
     int opt = 0;
     char *infile = NULL;
     char *outfile = NULL;
-    int mode = DEFAULT_MODE;
+    int user_mode = -1;
+    int screen_bpp = 0;
     int screen_width = 0;
     int screen_height = 0;
     int x_start = 0;
@@ -210,7 +302,7 @@ int main(int argc, char *argv[]) {
     while ((opt = getopt(argc, argv, "klhr:s:q:f:")) != -1) {
         switch (opt) {
             case 'r':
-                mode = atoi(optarg);
+                user_mode = atoi(optarg);
                 break;
             case 'q':
                 output_quality = atoi(optarg);
@@ -222,7 +314,7 @@ int main(int argc, char *argv[]) {
                 outfile = optarg;
                 break;
             case 'l':
-                list_modes();
+                list_modes(NULL);
                 break;
             case 'k':
                 keys();
@@ -244,47 +336,52 @@ int main(int argc, char *argv[]) {
         usage();
     }
 
-    for (int i = 0; all_modes[i].width; i++) {
-        if (i == mode) {
-            screen_width = all_modes[i].width;
-            screen_height = all_modes[i].height;
-        }
-    }
-
-    if (!screen_width || !screen_height) {
-        fprintf(stderr, "Unknown screen mode %d\n", mode);
-        list_modes();
-    }
-
     init_last_error();
     allegro_init();
     register_formats();
     install_keyboard();
     set_color_conversion(COLORCONV_TOTAL);
 
-    set_color_depth(32);
-    // if (!outfile) {
-    if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-        set_color_depth(24);
-        if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-            set_color_depth(8);
-            if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
-                set_last_error("Resolution %dx%d not available: %s\n", screen_width, screen_height, allegro_error);
-                clean_exit(EXIT_SUCCESS);
+    gfx_mode_t *modes = get_supported_modes();
+    gfx_mode_t *selected = NULL;
+    if (user_mode >= 0) {
+        DEBUGF("User selected %d\n", user_mode);
+        // find user supplied mode
+        gfx_mode_t *m = modes;
+        while (user_mode > 0 && m) {
+            user_mode--;
+            m = m->next;
+        }
+        selected = m;
+    } else {
+        DEBUGF("searching 640x480\n");
+        // try to find 640x480 with max bpp in list
+        gfx_mode_t *m = modes;
+        while (m) {
+            if (m->width == 640 && m->height == 480) {
+                selected = m;  // we just ovewrite because the list is sorted
             }
+
+            m = m->next;
         }
     }
+    DEBUGF("found %p\n", selected);
+
+    if (selected) {
+        screen_width = selected->width;
+        screen_height = selected->height;
+        screen_bpp = selected->bpp;
+    } else {
+        fprintf(stderr, "ERROR: Can't find screen mode\n");
+        list_modes(modes);
+    }
+
+    set_color_depth(screen_bpp);
+    if (set_gfx_mode(GFX_AUTODETECT, screen_width, screen_height, 0, 0) != 0) {
+        set_last_error("Resolution %dx%dx%d not available: %s\n", screen_width, screen_height, screen_bpp, allegro_error);
+        clean_exit(EXIT_SUCCESS);
+    }
     DEBUGF("%dx%d at %dbpp\n", screen_width, screen_height, get_color_depth());
-    // } else {
-    //     _rgb_r_shift_32 = 16;
-    //     _rgb_g_shift_32 = 8;
-    //     _rgb_b_shift_32 = 0;
-    //     _rgb_a_shift_32 = 24;
-    // }
-    // printf("_rgb_r_shift_32=%d", _rgb_r_shift_32);
-    // printf("_rgb_g_shift_32=%d", _rgb_g_shift_32);
-    // printf("_rgb_b_shift_32=%d", _rgb_b_shift_32);
-    // printf("_rgb_a_shift_32=%d", _rgb_a_shift_32);
 
     PALETTE pal;
     BITMAP *bm = load_bitmap(infile, pal);

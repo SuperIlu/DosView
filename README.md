@@ -3,8 +3,8 @@ This is a quick hack for an image viewer/converter for MS-DOS
 
 People on [DOS ain't dead](https://www.bttr-software.de/forum/forum_entry.php?id=20792) asked if it would be possible to create such a program for MS-DOS supporting modern image formats. As I had quite a lot of the necessary code already available from [DOjS](https://github.com/SuperIlu/DOjS) I decided to give it a try.
 
-`DosView` uses Allegro to display the images, it should support all VESA modes that are implemented by it.
-It tries 32bpp first and 24bpp is 32bpp is not available. The default screen format is 640x480, see below for other options.
+`DosView` uses Allegro to display the images, it should support all available VESA modes.
+The default screen format is 640x480 with most number of bpp, see below for other options.
 
 Please note: Although `DosView` should work from a i386 upwards, this programm can eat huge amounts of RAM (>64MiB) if you feed it large images and/or screen sizes.
 
@@ -91,6 +91,10 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * image conversion always needs a working display mode (Allegros fault)
 
 # Changelog
+### 1.5 / November 26th, 2023
+* Fixed Allegro VESA driver
+* Added screen mode autodetection
+
 ### 1.4 / November 24th, 2023
 * new screen resolutions and change in command line
 * (hopefully) fixed bug in image zooming when image was not 4:3 and a multiple of the resolution

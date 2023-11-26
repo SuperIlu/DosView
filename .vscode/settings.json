@@ -28,6 +28,8 @@
 		"format-jasper.h": "c",
 		"format-stb.h": "c",
 		"main.h": "c",
-		"stb_image.h": "c"
+		"stb_image.h": "c",
+		"aintdos.h": "c",
+		"aintern.h": "c"
 	}
 }

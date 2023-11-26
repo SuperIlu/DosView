@@ -55,6 +55,7 @@ LDFLAGS  = -s \
 
 # output
 EXE      = dosview.exe
+UPXEXE   = upxview.exe
 RELZIP   = dosview-X.Y.zip
 
 # dirs/files
@@ -70,6 +71,13 @@ LD=$(CROSS_PLATFORM)ld
 STRIP=$(CROSS_PLATFORM)strip
 RANLIB=$(CROSS_PLATFORM)ranlib
 export
+
+MKDIRPRG=mkdir
+UPXPRG=upx
+ZIPPRG=zip
+SHPRG=bash
+RMPRG=rm
+FINDPRG=find
 
 MPARA=-j8
 
@@ -89,7 +97,7 @@ dosview: $(EXE)
 
 liballegro: $(LIB_ALLEGRO)
 $(LIB_ALLEGRO):
-	cd $(ALLEGRO) && bash ./xmake.sh lib
+	cd $(ALLEGRO) && $(SHPRG) ./xmake.sh lib
 
 libz: $(LIB_Z)
 $(LIB_Z):
@@ -117,7 +125,7 @@ $(LIB_TIFF):
 
 libjasper: $(LIB_JASPER)
 $(LIB_JASPER):
-	(cd $(JASPER) && bash ./cmake-djgpp.sh)
+	(cd $(JASPER) && $(SHPRG) ./cmake-djgpp.sh)
 
 $(EXE): init liballegro libz alpng algif libwebp libjpeg libtiff libjasper $(PARTS) 
 	$(CC) $(LDFLAGS) -o $@ $(PARTS) $(LIBS)
@@ -129,19 +137,19 @@ $(BUILDDIR)/loadpng/%.o: $(LOADPNG)/%.c Makefile
 	$(CC) $(CFLAGS) -c $< -o $@
 
 zip: all
-	rm -f $(RELZIP)
-	upx -9 -oupxview.exe $(EXE)
-	zip -9 -r $(RELZIP) $(EXE) upxview.exe CWSDPMI.EXE LICENSE *.md
+	$(RMPRG) -f $(RELZIP) $(UPXEXE)
+	$(UPXPRG) -9 -o$(UPXEXE) $(EXE)
+	$(ZIPPRG) -9 $(RELZIP) $(EXE) $(UPXEXE) CWSDPMI.EXE LICENSE *.md
 
 init: configure_tiff
-	mkdir -p $(BUILDDIR) $(BUILDDIR)/loadpng
+	$(MKDIRPRG) -p $(BUILDDIR) $(BUILDDIR)/loadpng
 
 clean:
-	rm -rf $(BUILDDIR)/
-	rm -f $(EXE) $(ZIP) upxview.exe UPXVIEW.EXE
+	$(RMPRG) -rf $(BUILDDIR)/
+	$(RMPRG) -f $(EXE) $(RELZIP) upxview.exe UPXVIEW.EXE
 
 distclean: clean zclean alclean webpclean jpegclean distclean_tiff jasperclean alpngclean algifclean
-	rm -f OUT.* LOW.*
+	$(RMPRG) -f OUT.* LOW.*
 
 zclean:
 	$(MAKE) -C $(ZLIB) -f Makefile.dojs clean
@@ -150,7 +158,7 @@ jpegclean:
 	$(MAKE) -C $(JPEG) -f makefile.dj clean
 
 alclean:
-	cd $(ALLEGRO) && bash ./xmake.sh clean
+	cd $(ALLEGRO) && $(SHPRG) ./xmake.sh clean
 
 webpclean:
 	$(MAKE) -C $(WEBP) -f makefile.djgpp clean
@@ -165,14 +173,14 @@ algifclean:
 	$(MAKE) -C $(ALGIF) -f Makefile.dj clean
 
 jasperclean:
-	rm -rf $(JASPER)/djgpp
+	$(RMPRG) -rf $(JASPER)/djgpp
 
 fixnewlines:
-	find . -iname "*.sh" -exec dos2unix -v \{\} \;
+	$(FINDPRG) . -iname "*.sh" -exec dos2unix -v \{\} \;
 
 configure_tiff: $(TIFF)/Makefile
 $(TIFF)/Makefile:
-	(cd $(TIFF) && HOST=$(CROSS) CFLAGS="$(CFLAGS)" LDFLAGS="" LIBS="" bash ./djgpp-config.sh)
+	(cd $(TIFF) && HOST=$(CROSS) CFLAGS="$(CFLAGS)" LDFLAGS="" LIBS="" $(SHPRG) ./djgpp-config.sh)
 
 distclean_tiff:
 	-(cd $(TIFF) && make distclean)
