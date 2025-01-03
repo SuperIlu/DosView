@@ -91,6 +91,9 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * image conversion always needs a working display mode (Allegros fault)
 
 # Changelog
+### 1.6 / January 3rd, 2025
+* added FreeDOS package creation
+
 ### 1.5 / November 26th, 2023
 * Fixed Allegro VESA driver
 * Added screen mode autodetection

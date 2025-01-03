@@ -4,6 +4,9 @@
 # make sure the DJGPP toolchain is in your path (i586-pc-msdosdjgpp-XXX)!
 ###
 
+# temp directory for building FreeDOS archive
+TMP=/tmp/FDOS
+
 THIRDPARTY	= 3rdparty
 ALLEGRO		= $(THIRDPARTY)/allegro-4.2.2-xc-master
 ZLIB		= $(THIRDPARTY)/zlib-1.2.12
@@ -57,6 +60,7 @@ LDFLAGS  = -s \
 EXE      = dosview.exe
 UPXEXE   = upxview.exe
 RELZIP   = dosview-X.Y.zip
+FDZIP    = $(shell pwd)/FreeDOS_dosview-X.Y.zip
 
 # dirs/files
 DOJSPATH		= $(realpath .)
@@ -78,6 +82,8 @@ ZIPPRG=zip
 SHPRG=bash
 RMPRG=rm
 FINDPRG=find
+CPPRG=cp
+GITPRG=git
 
 MPARA=-j8
 
@@ -185,7 +191,35 @@ $(TIFF)/Makefile:
 distclean_tiff:
 	-(cd $(TIFF) && make distclean)
 
-.PHONY: clean distclean init distclean_tiff
+fdos: zip
+	# clean and re-create  working directories
+	$(RMPRG) -rf $(TMP) $(FDZIP)
+	$(MKDIRPRG) -p $(TMP)/APPINFO
+	$(MKDIRPRG) -p $(TMP)/UTIL/DOSVIEW
+	$(MKDIRPRG) -p $(TMP)/SOURCE/DOSVIEW
+	$(MKDIRPRG) -p $(TMP)/tmp
+	
+	# copy LSMs
+	$(CPPRG) FDOS/* $(TMP)/APPINFO
+
+	# copy distribution files
+	$(CPPRG) -R \
+		$(EXE) CWSDPMI.EXE LICENSE *.md \
+		$(TMP)/UTIL/DOSVIEW
+
+	# get sources
+	$(GITPRG) clone https://github.com/SuperIlu/DosView.git $(TMP)/tmp
+	$(RMPRG) -rf $(TMP)/tmp/.git
+	$(RMPRG) -rf $(TMP)/tmp/images
+
+	# zip up sources and remove tmp
+	(cd $(TMP)/tmp && $(ZIPPRG) -9 -r ../SOURCE/DOSVIEW/SOURCES.ZIP * && $(RMPRG) -rf $(TMP)/tmp)
+
+	# ZIP up everything as DOS ZIP and clean afterwards
+	(cd $(TMP) && $(ZIPPRG) -k -9 -r $(FDZIP) *)
+	$(RMPRG) -rf $(TMP)
+
+.PHONY: clean distclean init distclean_tiff fdos
 
 DEPS := $(wildcard $(BUILDDIR)/*.d)
 ifneq ($(DEPS),)
