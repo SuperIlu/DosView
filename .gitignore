@@ -164,6 +164,7 @@ dkms.conf
 3rdparty/tiff-4.6.0/tools/unsupported/Makefile
 3rdparty/tiff-4.6.0/tools/unsupported/.deps/tiff2pdf.Po
 3rdparty/tiff-4.6.0/tools/unsupported/.deps/tiff2ps.Po
+3rdparty/tiff-4.6.0/doc/__pycache__/conf.cpython-38.pyc
 
 # allegro
 3rdparty/allegro-4.2.2-xc-master/obj/djgpp/asmcapa.h
@@ -184,3 +185,4 @@ DBS.lnk
 DBX.lnk
 upx/
 FreeDOS_dosview-X.Y.zip
+images/XTRA/

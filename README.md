@@ -62,6 +62,7 @@ Usage:
 
 ## Keys
 - `ESC`/`Q`: quit
+- `H`: toggle help
 - `F`: show actual size
 - `Z`: fit to screen
 - `I`: toggle image info
@@ -91,6 +92,15 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * image conversion always needs a working display mode (Allegros fault)
 
 # Changelog
+### 1.7 / January 4th
+* Updated libjpeg to 9f.
+* Updated libjasper to 4.2.4.
+* Fixed a crash when running out of memory during loading/display.
+* Fixed version number when running DosView.
+* Added key to display help overlay in view mode.
+* Patched `3rdparty\allegro-4.2.2-xc-master\src\bmp.c` to support all BMP formats mentioned in https://en.wikipedia.org/wiki/BMP_file_format#Bitmap_file_header (backport from allegro5).
+* Fixed DE LSM for FreeDOS.
+
 ### 1.6 / January 3rd, 2025
 * added FreeDOS package creation
 

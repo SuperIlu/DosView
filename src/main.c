@@ -41,8 +41,8 @@ static char *lastError;
  * @param out stream to use
  */
 static void banner(FILE *out) {
-    fputs("This is DosView 1.5 (https://github.com/SuperIlu/DosView)\n", out);
-    fputs("(c) 2023 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
+    fputs("This is DosView 1.7 (https://github.com/SuperIlu/DosView)\n", out);
+    fputs("(c) 2023-2025 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
     fputs("See LICENSE for detailed licensing information.\n", out);
     fputs("\n", out);
 }
