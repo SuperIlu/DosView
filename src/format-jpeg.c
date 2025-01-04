@@ -152,6 +152,8 @@ BITMAP *load_jpeg(AL_CONST char *filename, RGB *pal) {
         return NULL;
     }
 
+    DEBUGF("bitmap created: %p\n", bm);
+
     /* We may need to do some setup of our own at this point before reading
      * the data.  After jpeg_start_decompress() we have the correct scaled
      * output image dimensions available, as well as the output colormap
@@ -162,6 +164,8 @@ BITMAP *load_jpeg(AL_CONST char *filename, RGB *pal) {
     row_stride = cinfo.output_width * cinfo.output_components;
     /* Make a one-row-high sample array that will go away when done with image */
     buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, row_stride, 1);
+
+    DEBUGF("buffer created: %p, stride=%d\n", buffer, row_stride);
 
     /* Step 6: while (scan lines remain to be read) */
     /*           jpeg_read_scanlines(...); */
@@ -175,6 +179,7 @@ BITMAP *load_jpeg(AL_CONST char *filename, RGB *pal) {
          * more than one scanline at a time if that's more convenient.
          */
         int numread = jpeg_read_scanlines(&cinfo, buffer, 1);
+        DEBUGF("numread=%d, scanline=%d\n", numread, cinfo.output_scanline);
         (void)numread;
         // DEBUGF("num read = %d, current = %d\n", numread, cinfo.output_scanline);
         /* Assume put_scanline_someplace wants a pointer and sample count. */
