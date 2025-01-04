@@ -75,6 +75,7 @@ static void keys() {
     banner(stderr);
     fputs("Keys:\n", stderr);
     fputs("  - `ESC`/`Q`       : quit\n", stderr);
+    fputs("  - `H`             : toggle help\n", stderr);
     fputs("  - `F`             : show actual size\n", stderr);
     fputs("  - `Z`             : fit to screen\n", stderr);
     fputs("  - `I`             : toggle image info\n", stderr);
@@ -276,6 +277,95 @@ static void clean_exit(int code) {
 }
 
 /**
+ * @brief draw image info overlay
+ *
+ * @param tmp image
+ * @param infile filename
+ * @param screen_width screen size
+ * @param screen_height screen size
+ * @param scaled_width scaled image size
+ * @param scaled_height scaled image size
+ * @param x_start display start pos
+ * @param y_start display start pos
+ * @param factor zoom factor
+ */
+static void draw_info(BITMAP *tmp, char *infile, int screen_width, int screen_height, int scaled_width, int scaled_height, int x_start, int y_start, float factor) {
+    int ySpacing = font->height + 1;
+    int xPos = 20;
+    int yPos = 10;
+    int width = 25 * font->height;
+    int height = ySpacing * 9;
+    if (strlen(infile) > 9) {
+        width += (strlen(infile) - 9) * font->height;
+    }
+
+    rectfill(screen, xPos, yPos, xPos + width, yPos + height, makecol(32, 32, 32));
+    rect(screen, xPos, yPos, xPos + width, yPos + height, makecol(227, 198, 34));
+
+    xPos += font->height;
+    yPos += font->height;
+    int txt_col = makecol(161, 21, 158);
+    textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Filename    : %s", infile);
+    yPos += ySpacing;
+    textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Image size  : %04dx%04d", tmp->w, tmp->h);
+    yPos += ySpacing;
+    textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Screen size : %04dx%04d", screen_width, screen_height);
+    yPos += ySpacing;
+    textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Screen bpp  : %dbpp", get_color_depth());
+    yPos += ySpacing;
+    textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Scaled size : %04dx%04d", scaled_width, scaled_height);
+    yPos += ySpacing;
+    textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Image pos   : %04dx%04d", x_start, y_start);
+    yPos += ySpacing;
+    textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Factor      : %.5f", factor);
+    yPos += ySpacing;
+}
+
+/**
+ * draw help overlay
+ */
+static void draw_help() {
+    int ySpacing = font->height + 1;
+    int xPos = 20;
+    int yPos = 10;
+    int width = 65 * font->height;
+    int height = ySpacing * 22;
+
+    rectfill(screen, xPos, yPos, xPos + width, yPos + height, makecol(32, 32, 32));
+    rect(screen, xPos, yPos, xPos + width, yPos + height, makecol(227, 198, 34));
+
+    char *help[] = {"(c) 2023-2025 by Andre Seidelt <superilu@yahoo.com> and others.",
+                    "See LICENSE for detailed licensing information.",
+                    "",
+                    "Keys:",
+                    "  - `ESC`/`Q`       : quit",
+                    "  - `H`             : toggle help",
+                    "  - `F`             : show actual size",
+                    "  - `Z`             : fit to screen",
+                    "  - `I`             : toggle image info",
+                    "  - `PAGE UP`/`9`   : increase zoom",
+                    "  - `PAGE DOWN`/`3` : decrease zoom",
+                    "  - `UP`/`8`        : move image up",
+                    "  - `DOWN`/`2`      : move image down",
+                    "  - `LEFT`/`4`      : move image left",
+                    "  - `RIGHT`/`6`     : move image right",
+                    "  - `SHIFT`         : move/scale 2x as fast",
+                    "  - `CTRL`          : move/scale 4x as fast",
+                    "  - `ALT`           : move/scale 8x as fast",
+                    "",
+                    "  `SHIFT`, `ALT` and `CTRL` can be used in any combination."};
+
+    xPos += font->height;
+    yPos += font->height;
+    int txt_col = makecol(161, 21, 158);
+
+    for (int i = 0; i < sizeof(help) / sizeof(char *); i++) {
+        textout_ex(screen, font, help[i], xPos, yPos, txt_col, -1);
+        yPos += ySpacing;
+    }
+}
+
+/**
  * @brief main entry point
  *
  * @param argc number of command line arguments
@@ -297,6 +387,7 @@ int main(int argc, char *argv[]) {
     int scaled_width;
     float factor = 1.0f;  // 1.0 is 'fit on screen'
     bool image_info = false;
+    bool help_info = false;
     float scale = 1.0f;
 
     while ((opt = getopt(argc, argv, "klhr:s:q:f:")) != -1) {
@@ -453,37 +544,12 @@ int main(int argc, char *argv[]) {
             stretch_blit(tmp, screen, src_x, src_y, src_w, src_h, dest_x, dest_y, dest_w, dest_h);
 
             //////
-            /// draw image
+            /// draw infos
             if (image_info) {
-                int ySpacing = font->height + 1;
-                int xPos = 20;
-                int yPos = 10;
-                int width = 25 * 8;
-                int height = ySpacing * 9;
-                if (strlen(infile) > 9) {
-                    width += (strlen(infile) - 9) * 8;
-                }
-
-                rectfill(screen, xPos, yPos, xPos + width, yPos + height, makecol(32, 32, 32));
-                rect(screen, xPos, yPos, xPos + width, yPos + height, makecol(227, 198, 34));
-
-                xPos += 8;
-                yPos += 8;
-                int txt_col = makecol(161, 21, 158);
-                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Filename    : %s", infile);
-                yPos += ySpacing;
-                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Image size  : %04dx%04d", tmp->w, tmp->h);
-                yPos += ySpacing;
-                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Screen size : %04dx%04d", screen_width, screen_height);
-                yPos += ySpacing;
-                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Screen bpp  : %dbpp", get_color_depth());
-                yPos += ySpacing;
-                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Scaled size : %04dx%04d", scaled_width, scaled_height);
-                yPos += ySpacing;
-                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Image pos   : %04dx%04d", x_start, y_start);
-                yPos += ySpacing;
-                textprintf_ex(screen, font, xPos, yPos, txt_col, -1, "Factor      : %.5f", factor);
-                yPos += ySpacing;
+                draw_info(tmp, infile, screen_width, screen_height, scaled_width, scaled_height, x_start, y_start, factor);
+            }
+            if (help_info) {
+                draw_help();
             }
 
             //////
@@ -549,8 +615,16 @@ int main(int argc, char *argv[]) {
                 }
             } else if ((key_lower == 'Z') || (key_lower == 'z')) {
                 factor = 1.0f;  // full zoom
-            } else if ((key_lower == 'i') || (key_lower == 'i')) {
+            } else if ((key_lower == 'I') || (key_lower == 'i')) {
                 image_info = !image_info;
+                if (image_info) {
+                    help_info = false;
+                }
+            } else if ((key_lower == 'H') || (key_lower == 'h')) {
+                help_info = !help_info;
+                if (help_info) {
+                    image_info = false;
+                }
             }
 
             //////
