@@ -14,7 +14,7 @@ ALPNG		= $(THIRDPARTY)/alpng13
 WEBP		= $(THIRDPARTY)/libwebp-1.3.2
 JPEG		= $(THIRDPARTY)/jpeg-9e
 TIFF		= $(THIRDPARTY)/tiff-4.6.0
-JASPER		= $(THIRDPARTY)/jasper-version-4.0.0
+JASPER		= $(THIRDPARTY)/jasper-4.2.4
 ALGIF		= $(THIRDPARTY)/algif_1.3
 STB			= $(THIRDPARTY)/stb
 
@@ -24,7 +24,7 @@ LIB_ALPNG	= $(ALPNG)/libalpng.a
 LIB_WEBP 	= $(WEBP)/src/libwebp.a
 LIB_JPEG 	= $(JPEG)/libjpeg.a
 LIB_TIFF 	= $(TIFF)/libtiff/.libs/libtiff.a
-LIB_JASPER 	= $(JASPER)/djgpp/src/libjasper/libjasper.a
+LIB_JASPER 	= $(THIRDPARTY)/djgpp-jasper/src/libjasper/libjasper.a
 LIB_ALGIF 	= $(ALGIF)/libalgif.a
 
 # compiler
@@ -40,7 +40,7 @@ INCLUDES = \
 	-I$(realpath $(STB)) \
 	-I$(realpath $(TIFF))/libtiff \
 	-I$(realpath $(JASPER))/src/libjasper/include \
-	-I$(realpath $(JASPER))/djgpp/src/libjasper/include/ \
+	-I$(realpath $(THIRDPARTY))/djgpp-jasper/src/libjasper/include \
 	-I$(realpath $(WEBP))/src
 
 # linker
@@ -53,7 +53,7 @@ LDFLAGS  = -s \
 	-L$(DOJSPATH)/$(WEBP)/sharpyuv \
 	-L$(DOJSPATH)/$(JPEG) \
 	-L$(DOJSPATH)/$(TIFF)/libtiff/.libs \
-	-L$(DOJSPATH)/$(JASPER)/djgpp/src/libjasper/ \
+	-L$(DOJSPATH)/$(THIRDPARTY)/djgpp-jasper/src/libjasper \
 	-L$(DOJSPATH)/$(ZLIB)
 
 # output
@@ -179,7 +179,7 @@ algifclean:
 	$(MAKE) -C $(ALGIF) -f Makefile.dj clean
 
 jasperclean:
-	$(RMPRG) -rf $(JASPER)/djgpp
+	$(RMPRG) -rf $(THIRDPARTY)/djgpp-jasper
 
 fixnewlines:
 	$(FINDPRG) . -iname "*.sh" -exec dos2unix -v \{\} \;

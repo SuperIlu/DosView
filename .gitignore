@@ -172,7 +172,7 @@ dkms.conf
 
 # build-dirs
 3rdparty/openjpeg-2.5.0/build
-3rdparty/jasper-version-4.0.0/djgpp
+3rdparty/djgpp-jasper
 
 # other
 DBS
