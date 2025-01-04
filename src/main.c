@@ -490,6 +490,11 @@ int main(int argc, char *argv[]) {
 
         // convert image to display color depth
         BITMAP *tmp = create_bitmap_ex(get_color_depth(), bm->w, bm->h);
+        if (!tmp) {
+            destroy_bitmap(bm);
+            set_last_error("Out of memory!");
+            clean_exit(EXIT_SUCCESS);
+        }
         blit(bm, tmp, 0, 0, 0, 0, bm->w, bm->h);
         destroy_bitmap(bm);
 
