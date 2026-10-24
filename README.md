@@ -1,4 +1,5 @@
 # DosView
+![DosView logo](/images/Ilu_Logos_Color_DosView400x.png)
 This is a quick hack for an image viewer/converter for MS-DOS
 
 People on [DOS ain't dead](https://www.bttr-software.de/forum/forum_entry.php?id=20792) asked if it would be possible to create such a program for MS-DOS supporting modern image formats. As I had quite a lot of the necessary code already available from [DOjS](https://github.com/SuperIlu/DOjS) I decided to give it a try.
@@ -9,7 +10,7 @@ The default screen format is 640x480 with most number of bpp, see below for othe
 Please note: Although `DosView` should work from a i386 upwards, this programm can eat huge amounts of RAM (>64MiB) if you feed it large images and/or screen sizes.
 
 **Binary downloads are available on the [Releases](https://github.com/SuperIlu/DosView/releases) page.**
-`UPXVIEW.EXE` is the same binary as `DOSVIEW.EXE` but compressed with [UPX 4.2.1](https://upx.github.io/).
+`UPXVIEW.EXE` is the same binary as `DOSVIEW.EXE` but compressed with [UPX 5.2.1](https://upx.github.io/).
 
 The source is on [GitHub](https://github.com/SuperIlu/DosView/)
 
@@ -92,7 +93,18 @@ Please see the attached [LICENSE](LICENSE) file for the license of all involved 
 * image conversion always needs a working display mode (Allegros fault)
 
 # Changelog
-### 1.7 / January 4th
+### 1.8 / January 4th
+* Updated zlib to 1.3.2
+* Updated libwebp to 1.6.0
+* Updated libjasper to 4.2.9
+* Updated libtiff to 4.7.2
+* Updated libjpeg to 10
+* Replaced Allegro by https://github.com/SuperIlu/DOSlegro
+* New Logo by Arusha
+* Fixed blank screen after exit on VirtualBox
+* Updated UPX
+
+### 1.7 / January 4th, 2025
 * Updated libjpeg to 9f.
 * Updated libjasper to 4.2.4.
 * Fixed a crash when running out of memory during loading/display.

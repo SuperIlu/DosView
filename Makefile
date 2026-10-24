@@ -8,23 +8,24 @@
 TMP=/tmp/FDOS
 
 THIRDPARTY	= 3rdparty
-ALLEGRO		= $(THIRDPARTY)/allegro-4.2.2-xc-master
-ZLIB		= $(THIRDPARTY)/zlib-1.2.12
+ALLEGRO		= $(THIRDPARTY)/DOSlegro
+ZLIB		= $(THIRDPARTY)/zlib-1.3.2
 ALPNG		= $(THIRDPARTY)/alpng13
-WEBP		= $(THIRDPARTY)/libwebp-1.3.2
-JPEG		= $(THIRDPARTY)/jpeg-9f
-TIFF		= $(THIRDPARTY)/tiff-4.6.0
-JASPER		= $(THIRDPARTY)/jasper-4.2.4
+WEBP		= $(THIRDPARTY)/libwebp-1.6.0
+JPEG		= $(THIRDPARTY)/jpeg-10
+TIFF		= $(THIRDPARTY)/tiff-4.7.2
+JASPER		= $(THIRDPARTY)/jasper-4.2.9
 ALGIF		= $(THIRDPARTY)/algif_1.3
 STB			= $(THIRDPARTY)/stb
 
-LIB_ALLEGRO	= $(ALLEGRO)/lib/djgpp/liballeg.a
+JASPER_BUILD=$(THIRDPARTY)/djgpp-jasper
+
 LIB_Z		= $(ZLIB)/msdos/libz.a
 LIB_ALPNG	= $(ALPNG)/libalpng.a
 LIB_WEBP 	= $(WEBP)/src/libwebp.a
 LIB_JPEG 	= $(JPEG)/libjpeg.a
 LIB_TIFF 	= $(TIFF)/libtiff/.libs/libtiff.a
-LIB_JASPER 	= $(THIRDPARTY)/djgpp-jasper/src/libjasper/libjasper.a
+LIB_JASPER 	= $(JASPER_BUILD)/src/libjasper/libjasper.a
 LIB_ALGIF 	= $(ALGIF)/libalgif.a
 
 # compiler
@@ -40,20 +41,20 @@ INCLUDES = \
 	-I$(realpath $(STB)) \
 	-I$(realpath $(TIFF))/libtiff \
 	-I$(realpath $(JASPER))/src/libjasper/include \
-	-I$(realpath $(THIRDPARTY))/djgpp-jasper/src/libjasper/include \
+	-I$(realpath $(JASPER_BUILD))/src/libjasper/include \
 	-I$(realpath $(WEBP))/src
 
 # linker
 LIBS     = -ljpeg -lwebp -lsharpyuv -lalpng -lalgif -ltiff -ljasper -lz -lalleg -lm -lemu 
 LDFLAGS  = -s \
-	-L$(DOJSPATH)/$(ALLEGRO)/lib/djgpp \
+	-L$(DOJSPATH)/$(ALLEGRO)/lib/ \
 	-L$(DOJSPATH)/$(ALPNG) \
 	-L$(DOJSPATH)/$(ALGIF) \
 	-L$(DOJSPATH)/$(WEBP)/src \
 	-L$(DOJSPATH)/$(WEBP)/sharpyuv \
 	-L$(DOJSPATH)/$(JPEG) \
 	-L$(DOJSPATH)/$(TIFF)/libtiff/.libs \
-	-L$(DOJSPATH)/$(THIRDPARTY)/djgpp-jasper/src/libjasper \
+	-L$(DOJSPATH)/$(JASPER_BUILD)/src/libjasper \
 	-L$(DOJSPATH)/$(ZLIB)
 
 # output
@@ -77,7 +78,7 @@ RANLIB=$(CROSS_PLATFORM)ranlib
 export
 
 MKDIRPRG=mkdir
-UPXPRG=upx
+UPXPRG=./upx/upx
 ZIPPRG=zip
 SHPRG=bash
 RMPRG=rm
@@ -100,10 +101,6 @@ PARTS= \
 all: dosview
 
 dosview: $(EXE)
-
-liballegro: $(LIB_ALLEGRO)
-$(LIB_ALLEGRO):
-	cd $(ALLEGRO) && $(SHPRG) ./xmake.sh lib
 
 libz: $(LIB_Z)
 $(LIB_Z):
@@ -133,7 +130,7 @@ libjasper: $(LIB_JASPER)
 $(LIB_JASPER):
 	(cd $(JASPER) && $(SHPRG) ./cmake-djgpp.sh)
 
-$(EXE): init liballegro libz alpng algif libwebp libjpeg libtiff libjasper $(PARTS) 
+$(EXE): init libz alpng algif libwebp libjpeg libtiff libjasper $(PARTS) 
 	$(CC) $(LDFLAGS) -o $@ $(PARTS) $(LIBS)
 
 $(BUILDDIR)/%.o: src/%.c Makefile
@@ -154,7 +151,7 @@ clean:
 	$(RMPRG) -rf $(BUILDDIR)/
 	$(RMPRG) -f $(EXE) $(RELZIP) upxview.exe UPXVIEW.EXE
 
-distclean: clean zclean alclean webpclean jpegclean distclean_tiff jasperclean alpngclean algifclean
+distclean: clean zclean webpclean jpegclean distclean_tiff jasperclean alpngclean algifclean
 	$(RMPRG) -f OUT.* LOW.*
 
 zclean:
@@ -162,9 +159,6 @@ zclean:
 
 jpegclean:
 	$(MAKE) -C $(JPEG) -f makefile.dj clean
-
-alclean:
-	cd $(ALLEGRO) && $(SHPRG) ./xmake.sh clean
 
 webpclean:
 	$(MAKE) -C $(WEBP) -f makefile.djgpp clean
@@ -179,7 +173,7 @@ algifclean:
 	$(MAKE) -C $(ALGIF) -f Makefile.dj clean
 
 jasperclean:
-	$(RMPRG) -rf $(THIRDPARTY)/djgpp-jasper
+	$(RMPRG) -rf $(JASPER_BUILD)
 
 fixnewlines:
 	$(FINDPRG) . -iname "*.sh" -exec dos2unix -v \{\} \;

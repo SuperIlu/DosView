@@ -27,22 +27,22 @@ int output_quality = 95;
 typedef struct __gfx_mode gfx_mode_t;
 
 struct __gfx_mode {
-    gfx_mode_t *next;
+    gfx_mode_t* next;
     int width;
     int height;
     int bpp;
 };
 
-static char *lastError;
+static char* lastError;
 
 /**
  * @brief print our banner.
  *
  * @param out stream to use
  */
-static void banner(FILE *out) {
-    fputs("This is DosView 1.7 (https://github.com/SuperIlu/DosView)\n", out);
-    fputs("(c) 2023-2025 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
+static void banner(FILE* out) {
+    fputs("This is DosView 1.8 (https://github.com/SuperIlu/DosView)\n", out);
+    fputs("(c) 2023-2026 by Andre Seidelt <superilu@yahoo.com> and others.\n", out);
     fputs("See LICENSE for detailed licensing information.\n", out);
     fputs("\n", out);
 }
@@ -114,7 +114,7 @@ static void clear_last_error() {
  *
  * @param err the last error string.
  */
-static void set_last_error(const char *err, ...) {
+static void set_last_error(const char* err, ...) {
     va_list args;
 
     clear_last_error();
@@ -137,14 +137,14 @@ static void set_last_error(const char *err, ...) {
  * @param height screen height
  * @param bpp bits per pixel
  */
-static void add_mode(gfx_mode_t **modes, int width, int height, int bpp) {
+static void add_mode(gfx_mode_t** modes, int width, int height, int bpp) {
     if (width < 320 || height < 200 || bpp < 8) {
         return;
     }
 
     // check if we already have that mode
     if (*modes) {
-        gfx_mode_t *m = *modes;
+        gfx_mode_t* m = *modes;
         while (m->next) {
             if (m->width == width && m->height == height && m->bpp == bpp) {
                 DEBUGF("duplicate %dx%dx%d\n", width, height, bpp);
@@ -154,7 +154,7 @@ static void add_mode(gfx_mode_t **modes, int width, int height, int bpp) {
         }
     }
 
-    gfx_mode_t *mode = calloc(1, sizeof(gfx_mode_t));
+    gfx_mode_t* mode = calloc(1, sizeof(gfx_mode_t));
     if (!mode) {
         fputs("OUT OF MEMORY\n", stderr);
         exit(EXIT_FAILURE);
@@ -169,7 +169,7 @@ static void add_mode(gfx_mode_t **modes, int width, int height, int bpp) {
         *modes = mode;
     } else {
         // put at end of list
-        gfx_mode_t *prev = *modes;
+        gfx_mode_t* prev = *modes;
         while (prev->next) {
             prev = prev->next;
         }
@@ -183,10 +183,10 @@ static void add_mode(gfx_mode_t **modes, int width, int height, int bpp) {
  *
  * @return gfx_mode_t* a list of modes or NULL if no mode found
  */
-static gfx_mode_t *get_supported_modes() {
-    gfx_mode_t *modes = NULL;
+static gfx_mode_t* get_supported_modes() {
+    gfx_mode_t* modes = NULL;
 
-    _DRIVER_INFO *driver_info;
+    _DRIVER_INFO* driver_info;
     if (system_driver->gfx_drivers) {
         driver_info = system_driver->gfx_drivers();
     } else {
@@ -194,9 +194,9 @@ static gfx_mode_t *get_supported_modes() {
     }
 
     for (int d = 0; driver_info[d].driver; d++) {
-        GFX_DRIVER *gfx_driver = driver_info[d].driver;
+        GFX_DRIVER* gfx_driver = driver_info[d].driver;
         DEBUGF("found driver #%d: %s\n", d, gfx_driver->ascii_name);
-        GFX_MODE_LIST *gfx_mode_list = get_gfx_mode_list(gfx_driver->id);
+        GFX_MODE_LIST* gfx_mode_list = get_gfx_mode_list(gfx_driver->id);
         if (gfx_mode_list) {
             DEBUGF("it has %d modes\n", gfx_mode_list->num_modes);
             for (int m = 0; m < gfx_mode_list->num_modes; m++) {
@@ -212,7 +212,7 @@ static gfx_mode_t *get_supported_modes() {
 /**
  * @brief print the list of know modes to stdout
  */
-static void list_modes(gfx_mode_t *modes) {
+static void list_modes(gfx_mode_t* modes) {
     if (!modes) {
         init_last_error();
         allegro_init();
@@ -232,6 +232,7 @@ static void list_modes(gfx_mode_t *modes) {
         i++;
         modes = modes->next;
     }
+    fprintf(stdout, "\n");
     allegro_exit();
     exit(EXIT_FAILURE);
 }
@@ -266,7 +267,7 @@ static void register_formats() {
  */
 static void clean_exit(int code) {
     allegro_exit();
-    // textmode(C80);
+    textmode(C80);
     if (lastError) {
         fputs(lastError, stdout);
         fputs("\nERROR\n", stdout);
@@ -289,7 +290,7 @@ static void clean_exit(int code) {
  * @param y_start display start pos
  * @param factor zoom factor
  */
-static void draw_info(BITMAP *tmp, char *infile, int screen_width, int screen_height, int scaled_width, int scaled_height, int x_start, int y_start, float factor) {
+static void draw_info(BITMAP* tmp, char* infile, int screen_width, int screen_height, int scaled_width, int scaled_height, int x_start, int y_start, float factor) {
     int ySpacing = font->height + 1;
     int xPos = 20;
     int yPos = 10;
@@ -334,7 +335,7 @@ static void draw_help() {
     rectfill(screen, xPos, yPos, xPos + width, yPos + height, makecol(32, 32, 32));
     rect(screen, xPos, yPos, xPos + width, yPos + height, makecol(227, 198, 34));
 
-    char *help[] = {"(c) 2023-2025 by Andre Seidelt <superilu@yahoo.com> and others.",
+    char* help[] = {"(c) 2023-2026 by Andre Seidelt <superilu@yahoo.com> and others.",
                     "See LICENSE for detailed licensing information.",
                     "",
                     "Keys:",
@@ -359,7 +360,7 @@ static void draw_help() {
     yPos += font->height;
     int txt_col = makecol(161, 21, 158);
 
-    for (int i = 0; i < sizeof(help) / sizeof(char *); i++) {
+    for (int i = 0; i < sizeof(help) / sizeof(char*); i++) {
         textout_ex(screen, font, help[i], xPos, yPos, txt_col, -1);
         yPos += ySpacing;
     }
@@ -373,10 +374,10 @@ static void draw_help() {
  *
  * @return int 0 for success
  */
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     int opt = 0;
-    char *infile = NULL;
-    char *outfile = NULL;
+    char* infile = NULL;
+    char* outfile = NULL;
     int user_mode = -1;
     int screen_bpp = 0;
     int screen_width = 0;
@@ -433,12 +434,12 @@ int main(int argc, char *argv[]) {
     install_keyboard();
     set_color_conversion(COLORCONV_TOTAL);
 
-    gfx_mode_t *modes = get_supported_modes();
-    gfx_mode_t *selected = NULL;
+    gfx_mode_t* modes = get_supported_modes();
+    gfx_mode_t* selected = NULL;
     if (user_mode >= 0) {
         DEBUGF("User selected %d\n", user_mode);
         // find user supplied mode
-        gfx_mode_t *m = modes;
+        gfx_mode_t* m = modes;
         while (user_mode > 0 && m) {
             user_mode--;
             m = m->next;
@@ -447,7 +448,7 @@ int main(int argc, char *argv[]) {
     } else {
         DEBUGF("searching 640x480\n");
         // try to find 640x480 with max bpp in list
-        gfx_mode_t *m = modes;
+        gfx_mode_t* m = modes;
         while (m) {
             if (m->width == 640 && m->height == 480) {
                 selected = m;  // we just ovewrite because the list is sorted
@@ -475,7 +476,7 @@ int main(int argc, char *argv[]) {
     DEBUGF("%dx%d at %dbpp\n", screen_width, screen_height, get_color_depth());
 
     PALETTE pal;
-    BITMAP *bm = load_bitmap(infile, pal);
+    BITMAP* bm = load_bitmap(infile, pal);
     if (!bm) {
         set_last_error("Can't load image %s", infile);
         clean_exit(EXIT_SUCCESS);
@@ -489,7 +490,7 @@ int main(int argc, char *argv[]) {
         }
 
         // convert image to display color depth
-        BITMAP *tmp = create_bitmap_ex(get_color_depth(), bm->w, bm->h);
+        BITMAP* tmp = create_bitmap_ex(get_color_depth(), bm->w, bm->h);
         if (!tmp) {
             destroy_bitmap(bm);
             set_last_error("Out of memory!");
@@ -680,7 +681,7 @@ int main(int argc, char *argv[]) {
             }
 
             fprintf(stdout, "Scaling to %4dx%4d\n", scaled_width, scaled_height);
-            BITMAP *scaled = create_bitmap_ex(32, scaled_width, scaled_height);
+            BITMAP* scaled = create_bitmap_ex(32, scaled_width, scaled_height);
             if (!scaled) {
                 fprintf(stdout, "Out of memory, image to large.");
                 clean_exit(EXIT_FAILURE);
